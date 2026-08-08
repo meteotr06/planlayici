@@ -1,0 +1,17 @@
+{
+    "name": "Haftalık Planlayıcı",
+    "short_name": "Planlayıcı",
+    "description": "Saat saat haftalık ders ve aktivite planlayıcısı. Her hafta baştan!",
+    "lang": "tr",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#0f1220",
+    "theme_color": "#0f1220",
+    "icons": [
+        { "src": "ikon-192.png", "sizes": "192x192", "type": "image/png" },
+        { "src": "ikon-512.png", "sizes": "512x512", "type": "image/png" },
+        { "src": "ikon-maskeli.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    ]
+}

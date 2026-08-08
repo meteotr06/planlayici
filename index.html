@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Haftalık Planlayıcı</title>
+    <meta name="description" content="Saat saat haftalık ders ve aktivite planlayıcısı. Her hafta baştan!" />
+    <meta name="theme-color" content="#0f1220" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/png" href="ikon-192.png" />
+    <link rel="apple-touch-icon" href="ikon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="stylesheet" href="stil.css" />
+</head>
+<body>
+    <header>
+        <h1>📅 Haftalık <span>Planlayıcı</span></h1>
+        <div class="hafta-gezinti">
+            <button id="oncekiHafta" title="Önceki hafta">◀</button>
+            <span id="haftaEtiketi"></span>
+            <button id="sonrakiHafta" title="Sonraki hafta">▶</button>
+            <button id="buHafta">Bugün</button>
+        </div>
+        <div class="sag-grup">
+            <span id="ozet"></span>
+            <button id="ornekBtn" class="ikincil">🏫 Örnek program</button>
+            <button id="yeniBlokBtn" class="birincil">＋ Blok Ekle</button>
+        </div>
+    </header>
+
+    <!-- Kategori filtresi: tıklayınca takvimde gizle/göster -->
+    <div id="filtreListe" class="filtre-serit"></div>
+
+    <div class="govde">
+        <!-- Saat saat haftalık takvim -->
+        <main id="takvimKutu" class="takvim">
+            <div id="takvimIc" class="takvim-ic"></div>
+        </main>
+
+        <!-- Yan panel -->
+        <aside class="yan-panel">
+            <section class="panel">
+                <h3>📊 Bu Hafta</h3>
+                <div id="istatistikKutu"></div>
+            </section>
+
+            <section class="panel">
+                <h3>🎯 Hedefler &amp; Sınavlar</h3>
+                <div id="hedefListe"></div>
+                <div class="hedef-ekle">
+                    <input id="hedefAd" type="text" placeholder="ör. Matematik sınavı" />
+                    <div class="hedef-ekle-alt">
+                        <input id="hedefTarih" type="date" />
+                        <button id="hedefEkleBtn" class="birincil">+</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h3>🕓 Boş Vakitte</h3>
+                <div id="esnekListe"></div>
+                <div class="esnek-ekle">
+                    <input id="esnekGiris" type="text" placeholder="Fırsat olursa yapılacak..." />
+                    <button id="esnekEkleBtn" class="birincil">+</button>
+                </div>
+            </section>
+
+            <section class="panel">
+                <h3>💾 Yedek</h3>
+                <div class="yedek-satir">
+                    <button id="yedekAlBtn" class="ikincil">⬇ Yedek al</button>
+                    <label class="ikincil dosya-dugme">⬆ Yedek yükle
+                        <input id="yedekYukleGiris" type="file" accept=".json" />
+                    </label>
+                </div>
+            </section>
+        </aside>
+    </div>
+
+    <!-- Blok ekleme / düzenleme penceresi -->
+    <div id="kaplama" class="kaplama gizli">
+        <div class="pencere">
+            <h3 id="pencereBaslik">Yeni Blok</h3>
+            <label class="alan">Ne yapacaksın?
+                <input id="mBaslik" type="text" placeholder="ör. Matematik dersi" />
+            </label>
+            <div class="satir">
+                <label class="alan">Gün
+                    <select id="mGun">
+                        <option value="0">Pazartesi</option>
+                        <option value="1">Salı</option>
+                        <option value="2">Çarşamba</option>
+                        <option value="3">Perşembe</option>
+                        <option value="4">Cuma</option>
+                        <option value="5">Cumartesi</option>
+                        <option value="6">Pazar</option>
+                    </select>
+                </label>
+                <label class="alan">Başlangıç
+                    <input id="mBas" type="time" step="300" />
+                </label>
+                <label class="alan">Bitiş
+                    <input id="mBit" type="time" step="300" />
+                </label>
+            </div>
+            <div class="satir">
+                <label class="alan">Tür
+                    <select id="mKategori">
+                        <option value="ders">📚 Ders</option>
+                        <option value="etut">✍️ Etüt / Ödev</option>
+                        <option value="spor">🏃 Spor</option>
+                        <option value="yemek">🍽️ Yemek</option>
+                        <option value="uyku">😴 Uyku</option>
+                        <option value="serbest">🎮 Serbest</option>
+                        <option value="genel">📝 Diğer</option>
+                    </select>
+                </label>
+                <label class="tekrar-kutu"><input id="mTekrar" type="checkbox" checked />🔁 Her hafta tekrarla</label>
+            </div>
+            <label class="alan">Not (isteğe bağlı)
+                <textarea id="mNot" rows="2" placeholder="ör. Sayfa 40-52 çözülecek, formüller tekrar edilecek"></textarea>
+            </label>
+            <div class="dugmeler">
+                <button id="mSil" class="tehlike">Sil</button>
+                <button id="mKopyala" class="ikincil" title="Bu bilgilerle yeni bir kopya oluşturur">Kopyala</button>
+                <span class="bosluk"></span>
+                <button id="mIptal" class="ikincil">Vazgeç</button>
+                <button id="mKaydet" class="birincil">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Önce çekirdek (mantık), sonra arayüz (görünüm) yüklenir -->
+    <script src="cekirdek.js"></script>
+    <script src="arayuz.js"></script>
+    <script>
+        // Çevrimdışı çalışma (PWA): service worker'ı kaydet
+        if ("serviceWorker" in navigator && location.protocol !== "file:") {
+            navigator.serviceWorker.register("sw.js");
+        }
+    </script>
+</body>
+</html>
