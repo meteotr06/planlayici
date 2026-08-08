@@ -523,7 +523,8 @@ function takvimCiz() {
             const y = e.offsetY;
             const yarimSaat = Math.floor(y / (SAAT_YUKSEKLIK / 2));
             const basDak = yarimSaat * 30;
-            pencereAc(null, gun, dakToSaat(basDak), dakToSaat(Math.min(basDak + 60, 1439)));
+            const sure = veri.ayarlar.varsayilanSure || 60;
+            pencereAc(null, gun, dakToSaat(basDak), dakToSaat(Math.min(basDak + sure, 1439)));
         };
 
         const bloklar = gunBloklari(anahtar, gun)
@@ -794,12 +795,14 @@ document.getElementById("checkinPlanla").onclick = () => {
 // ---------- 🎯 Odak modu (Pomodoro) ----------
 // 25 dk odak + 5 dk mola döngüsü. Biten her odak turu güne "odak dakikası" yazar,
 // bu da 🔥 seriyi besler (Forest/TickTick'teki gibi).
-const ODAK_SN = 25 * 60, MOLA_SN = 5 * 60;
 const odakKaplama = document.getElementById("odakKaplama");
 let odak = null; // {faz, kalan, calisiyor, sayac, tur}
 
 function odakAc(blokAdi) {
-    odak = { faz: "odak", kalan: ODAK_SN, calisiyor: false, sayac: null, tur: 1, dagilma: 0 };
+    const odakSn = (veri.ayarlar.odakDk || 25) * 60;
+    const molaSn = (veri.ayarlar.molaDk || 5) * 60;
+    odak = { faz: "odak", kalan: odakSn, odakSn, molaSn,
+             calisiyor: false, sayac: null, tur: 1, dagilma: 0 };
     document.getElementById("odakBaslik").textContent = "🎯 " + blokAdi;
     odakGoster();
     odakKaplama.classList.remove("gizli");
@@ -824,15 +827,16 @@ document.getElementById("odakBaslat").onclick = () => {
             odak.kalan--;
             if (odak.kalan <= 0) {
                 if (odak.faz === "odak") {
-                    odakEkle(25); // tam pomodoro tamamlandı
+                    odakEkle(Math.round(odak.odakSn / 60)); // tam tur tamamlandı
                     const skor = Math.max(0, 100 - odak.dagilma * 10);
                     odakSkorKaydet(skor);
                     bipCal();
-                    bildirimGoster("🎉 25 dk odak tamamlandı! Odak skorun: " + skor + "/100. Şimdi 5 dk mola.");
+                    bildirimGoster("🎉 " + Math.round(odak.odakSn / 60) + " dk odak tamamlandı! Skor: " +
+                                   skor + "/100. Şimdi " + Math.round(odak.molaSn / 60) + " dk mola.");
                     odak.dagilma = 0;
-                    odak.faz = "mola"; odak.kalan = MOLA_SN;
+                    odak.faz = "mola"; odak.kalan = odak.molaSn;
                 } else {
-                    odak.faz = "odak"; odak.kalan = ODAK_SN; odak.tur++;
+                    odak.faz = "odak"; odak.kalan = odak.odakSn; odak.tur++;
                     bildirimGoster("💪 Mola bitti, " + odak.tur + ". tura başlıyoruz!");
                 }
                 ciz();
@@ -846,7 +850,7 @@ document.getElementById("odakBaslat").onclick = () => {
 document.getElementById("odakBitir").onclick = () => {
     clearInterval(odak.sayac);
     if (odak.faz === "odak") {
-        const gecenDk = Math.floor((ODAK_SN - odak.kalan) / 60);
+        const gecenDk = Math.floor((odak.odakSn - odak.kalan) / 60);
         if (gecenDk >= 1) {
             odakEkle(gecenDk);
             const skor = Math.max(0, 100 - odak.dagilma * 10);
@@ -1249,6 +1253,7 @@ function konfetiPatlat() {
 
 // ---------- 🔊 Bip sesi (Pomodoro bitişi) ----------
 function bipCal() {
+    if (veri.ayarlar.ses === false) return;
     try {
         const ses = new (window.AudioContext || window.webkitAudioContext)();
         for (let i = 0; i < 3; i++) {
@@ -1321,6 +1326,37 @@ function karneIndir() {
 }
 
 document.getElementById("karneBtn").onclick = karneIndir;
+
+// ---------- ⚙️ Ayarlar ----------
+const ayarlarKaplama = document.getElementById("ayarlarKaplama");
+
+document.getElementById("ayarlarBtn").onclick = () => {
+    document.getElementById("aOdakDk").value = veri.ayarlar.odakDk;
+    document.getElementById("aMolaDk").value = veri.ayarlar.molaDk;
+    document.getElementById("aVarsayilanSure").value = veri.ayarlar.varsayilanSure;
+    document.getElementById("aSes").checked = veri.ayarlar.ses !== false;
+    ayarlarKaplama.classList.remove("gizli");
+};
+
+document.getElementById("aKapat").onclick = () => ayarlarKaplama.classList.add("gizli");
+ayarlarKaplama.onclick = (e) => { if (e.target === ayarlarKaplama) ayarlarKaplama.classList.add("gizli"); };
+
+document.getElementById("aKaydet").onclick = () => {
+    ayarGuncelle("odakDk", Math.max(5, Math.min(120, Number(document.getElementById("aOdakDk").value) || 25)));
+    ayarGuncelle("molaDk", Math.max(1, Math.min(60, Number(document.getElementById("aMolaDk").value) || 5)));
+    ayarGuncelle("varsayilanSure", Number(document.getElementById("aVarsayilanSure").value) || 60);
+    ayarGuncelle("ses", document.getElementById("aSes").checked);
+    ayarlarKaplama.classList.add("gizli");
+    bildirimGoster("⚙️ Ayarlar kaydedildi.");
+    ciz();
+};
+
+document.getElementById("aVeriSil").onclick = () => {
+    if (!confirm("TÜM verilerin (program, denemeler, alışkanlıklar, XP...) silinecek. Emin misin?")) return;
+    if (!confirm("Son kez soruyorum: geri dönüşü YOK. Önce 💾 Yedek almak istemez misin? Yine de silinsin mi?")) return;
+    tumVeriyiSil();
+    location.reload();
+};
 
 // ---------- 🌗 Tema ve görünüm düğmeleri ----------
 function temaUygula() {

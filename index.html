@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="ikon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="stylesheet" href="stil.css?v=10" />
+    <link rel="stylesheet" href="stil.css?v=11" />
 </head>
 <body>
     <header>
@@ -27,6 +27,7 @@
             <span id="seviye" title="Seviyen — blok bitir, odaklan, soru çöz: XP kazan"></span>
             <span id="seri" title="Seri: üst üste kaç gün iş bitirdin"></span>
             <span id="ozet"></span>
+            <button id="ayarlarBtn" class="ikincil" title="Ayarlar">⚙️</button>
             <button id="gorunumBtn" class="ikincil" title="Bugün / hafta görünümü"></button>
             <button id="temaBtn" class="ikincil" title="Açık / koyu tema"></button>
             <button id="checkinBtn" class="ikincil" title="Günlük planlama: bugün ne yapacaksın?">☀️</button>
@@ -299,6 +300,38 @@
         </div>
     </div>
 
+    <!-- ⚙️ Ayarlar penceresi -->
+    <div id="ayarlarKaplama" class="kaplama gizli">
+        <div class="pencere">
+            <h3>⚙️ Ayarlar</h3>
+            <div class="satir">
+                <label class="alan">🎯 Odak süresi (dk)
+                    <input id="aOdakDk" type="number" min="5" max="120" />
+                </label>
+                <label class="alan">☕ Mola süresi (dk)
+                    <input id="aMolaDk" type="number" min="1" max="60" />
+                </label>
+            </div>
+            <label class="alan">🧱 Boş saate tıklayınca eklenen blok süresi
+                <select id="aVarsayilanSure">
+                    <option value="30">30 dakika</option>
+                    <option value="45">45 dakika</option>
+                    <option value="60">1 saat</option>
+                    <option value="90">1,5 saat</option>
+                    <option value="120">2 saat</option>
+                </select>
+            </label>
+            <label class="tekrar-kutu"><input id="aSes" type="checkbox" />🔊 Pomodoro bitiş sesi çalsın</label>
+            <div class="panel-bos">Tema (☀️🌙), görünüm (📋/🗓️) ve bildirim (🔔) ayarları üst bardaki düğmelerde.</div>
+            <button id="aVeriSil" class="tehlike">🗑️ Tüm verileri sıfırla</button>
+            <div class="dugmeler">
+                <span class="bosluk"></span>
+                <button id="aKapat" class="ikincil">Kapat</button>
+                <button id="aKaydet" class="birincil">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 🎯 Odak modu (Pomodoro) -->
     <div id="odakKaplama" class="kaplama gizli">
         <div class="pencere odak-pencere">
@@ -315,8 +348,8 @@
     </div>
 
     <!-- Önce çekirdek (mantık), sonra arayüz (görünüm) yüklenir -->
-    <script src="cekirdek.js?v=10"></script>
-    <script src="arayuz.js?v=10"></script>
+    <script src="cekirdek.js?v=11"></script>
+    <script src="arayuz.js?v=11"></script>
     <script>
         // Çevrimdışı çalışma (PWA): service worker'ı kaydet
         if ("serviceWorker" in navigator && location.protocol !== "file:") {

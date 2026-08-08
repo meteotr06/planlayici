@@ -23,7 +23,8 @@ let veri = {
     soruDersler: [],// soru sayacındaki kalıcı ders adları
     sonCheckin: null,// günlük karşılama en son hangi gün yapıldı ("2026-08-08")
     aliskanliklar: [], // günlük alışkanlıklar [{id, ad}]
-    aliskanlikIz: {}   // hangi gün hangileri yapıldı { "2026-08-08": ["id1", "id2"] }
+    aliskanlikIz: {},  // hangi gün hangileri yapıldı { "2026-08-08": ["id1", "id2"] }
+    ayarlar: { odakDk: 25, molaDk: 5, varsayilanSure: 60, ses: true }
 };
 
 // ---------- Kaydet / Yükle ----------
@@ -45,6 +46,7 @@ function yukle() {
     if (veri.sonCheckin === undefined) veri.sonCheckin = null;
     veri.aliskanliklar = veri.aliskanliklar || [];
     veri.aliskanlikIz = veri.aliskanlikIz || {};
+    veri.ayarlar = Object.assign({ odakDk: 25, molaDk: 5, varsayilanSure: 60, ses: true }, veri.ayarlar || {});
     eskiVeriyiTasi();
 }
 
@@ -1123,6 +1125,17 @@ function sihirbazPlanUret(c) {
 function tekrarlayanTemizle() {
     veri.tekrarlayan = [];
     kaydet();
+}
+
+// ---------- ⚙️ Ayarlar ----------
+function ayarGuncelle(ad, deger) {
+    veri.ayarlar[ad] = deger;
+    kaydet();
+}
+
+// Her şeyi siler — sadece Ayarlar'daki çift onaylı düğmeden çağrılır!
+function tumVeriyiSil() {
+    localStorage.removeItem(KAYIT_ADI);
 }
 
 // Hiç kayıt var mı? (örnek program önerisi için)

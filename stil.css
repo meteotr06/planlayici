@@ -26,6 +26,25 @@ body.acik {
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* Yumuşak geçişler ve kaydırma çubukları */
+button, .blok, .cip, .oneri, .panel, input, select {
+    transition: background 0.15s, border-color 0.15s, color 0.15s,
+                transform 0.15s, box-shadow 0.15s, filter 0.15s;
+}
+button:active { transform: scale(0.96); }
+.birincil:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(108, 140, 255, 0.35); }
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--kenar); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--vurgu); }
+
+.kaplama .pencere { animation: pencere-gel 0.18s ease-out; }
+@keyframes pencere-gel {
+    from { transform: translateY(14px) scale(0.98); opacity: 0; }
+    to { transform: none; opacity: 1; }
+}
+
 body {
     font-family: "Segoe UI", system-ui, sans-serif;
     background: var(--arka);
@@ -233,7 +252,7 @@ header h1 span { color: var(--vurgu); }
     z-index: 2;
     user-select: none;
 }
-.blok:hover { filter: brightness(1.2); z-index: 3; }
+.blok:hover { filter: brightness(1.2); z-index: 3; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35); }
 .blok.suruklenen { opacity: 0.75; cursor: grabbing; z-index: 10; box-shadow: 0 6px 18px rgba(0,0,0,0.5); }
 
 .blok input[type="checkbox"] {
@@ -759,6 +778,7 @@ details.panel[open] summary::after { content: "▾"; }
 }
 
 #karneBtn { width: 100%; }
+#aVeriSil { width: 100%; }
 
 /* ---------- Dar ekran ---------- */
 @media (max-width: 900px) {
