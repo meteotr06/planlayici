@@ -67,6 +67,51 @@ header h1 span { color: var(--vurgu); }
 }
 .birincil:hover { filter: brightness(1.15); }
 
+/* ---------- Hızlı ekleme ---------- */
+.hizli-serit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--kart);
+    border: 1px solid var(--cizgi);
+    border-radius: 12px;
+    padding: 6px 10px;
+}
+.hizli-simge { font-size: 1rem; }
+.hizli-serit input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--yazi);
+    font-size: 0.9rem;
+    font-family: inherit;
+    padding: 6px 2px;
+    min-width: 0;
+}
+.hizli-serit input:focus { outline: none; }
+.hizli-serit input::placeholder { color: var(--soluk); }
+.hizli-serit .birincil { padding: 6px 16px; }
+
+/* Bildirim (toast) */
+#bildirim {
+    position: fixed;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--kart-acik);
+    border: 1px solid var(--vurgu);
+    color: var(--yazi);
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-size: 0.88rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 30;
+    max-width: 90vw;
+}
+#bildirim.acik { opacity: 1; transform: translateX(-50%) translateY(0); }
+
 /* ---------- Kategori filtresi ---------- */
 .filtre-serit { display: flex; flex-wrap: wrap; gap: 6px; }
 

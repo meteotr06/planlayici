@@ -277,6 +277,105 @@ function iceAktar(metin) {
     }
 }
 
+// ---------- Hızlı yazı ayrıştırma ----------
+// "salı 16-17 matematik" gibi tek satırı anlayıp blok bilgisine çevirir.
+// Saat yoksa "boş vakitte" görevi sayılır. "her" kelimesi = her hafta tekrarla.
+const GUN_SOZLUGU = {
+    "pazartesi": 0, "pzt": 0,
+    "sali": 1, "salı": 1, "sal": 1,
+    "carsamba": 2, "çarşamba": 2, "car": 2, "çar": 2, "crs": 2, "çrş": 2,
+    "persembe": 3, "perşembe": 3, "per": 3, "prş": 3,
+    "cuma": 4, "cum": 4,
+    "cumartesi": 5, "cmt": 5,
+    "pazar": 6, "paz": 6
+};
+
+const KATEGORI_IPUCLARI = {
+    ders:    ["matematik", "mat", "fizik", "kimya", "biyoloji", "türkçe", "turkce", "tarih",
+              "coğrafya", "cografya", "ingilizce", "edebiyat", "geometri", "felsefe", "din",
+              "almanca", "ders", "sınav", "sinav", "deneme", "okul", "kurs", "dershane"],
+    etut:    ["ödev", "odev", "etüt", "etut", "tekrar", "çalış", "calis", "soru", "test", "konu", "proje"],
+    spor:    ["spor", "futbol", "basketbol", "voleybol", "koşu", "kosu", "antrenman",
+              "yüzme", "yuzme", "fitness", "maç", "mac", "yürüyüş", "yuruyus"],
+    yemek:   ["kahvaltı", "kahvalti", "yemek", "öğle", "ogle", "akşam", "aksam"],
+    uyku:    ["uyku", "uyu", "şekerleme", "sekerleme"],
+    serbest: ["oyun", "film", "dizi", "serbest", "mola", "dinlen", "müzik", "muzik",
+              "gezme", "arkadaş", "arkadas", "sosyal", "tatil"]
+};
+
+function kategoriTahminEt(kelimeler) {
+    for (const k of kelimeler) {
+        const kucuk = k.toLocaleLowerCase("tr");
+        for (const kategori in KATEGORI_IPUCLARI) {
+            for (const ipucu of KATEGORI_IPUCLARI[kategori]) {
+                if (kucuk === ipucu || (ipucu.length >= 4 && kucuk.startsWith(ipucu))) {
+                    return kategori;
+                }
+            }
+        }
+    }
+    return "genel";
+}
+
+// "16", "16:30", "16.30" -> dakika; geçersizse null
+function saatOku(parca) {
+    const e = parca.match(/^(\d{1,2})(?:[:.](\d{2}))?$/);
+    if (!e) return null;
+    const s = Number(e[1]), d = Number(e[2] || 0);
+    if (s > 23 || d > 59) return null;
+    return s * 60 + d;
+}
+
+function hizliAyristir(metin, varsayilanGun) {
+    metin = metin.trim();
+    if (!metin) return null;
+    const parcalar = metin.split(/\s+/);
+    let gun = null, herHafta = false, basDak = null, bitDak = null;
+    const kalan = [];
+
+    for (const parca of parcalar) {
+        const kucuk = parca.toLocaleLowerCase("tr").replace(/[,;]+$/, "");
+
+        if (kucuk === "her") { herHafta = true; continue; }
+        if (kucuk === "hafta" && herHafta) { continue; }
+        if (kucuk === "bugün" || kucuk === "bugun") { gun = varsayilanGun; continue; }
+        if (kucuk === "yarın" || kucuk === "yarin") { gun = (varsayilanGun + 1) % 7; continue; }
+        if (GUN_SOZLUGU[kucuk] !== undefined && gun === null) { gun = GUN_SOZLUGU[kucuk]; continue; }
+
+        // "16-17" ya da "16:30-18" aralığı
+        const aralik = kucuk.match(/^(\d{1,2}(?:[:.]\d{2})?)-(\d{1,2}(?:[:.]\d{2})?)$/);
+        if (aralik && basDak === null) {
+            const b1 = saatOku(aralik[1]), b2 = saatOku(aralik[2]);
+            if (b1 !== null && b2 !== null) { basDak = b1; bitDak = b2; continue; }
+        }
+
+        // Tek saat: ilki başlangıç, ikincisi bitiş
+        const tek = saatOku(kucuk);
+        if (tek !== null && (basDak === null || bitDak === null)) {
+            if (basDak === null) basDak = tek;
+            else bitDak = tek;
+            continue;
+        }
+
+        kalan.push(parca);
+    }
+
+    const baslik = kalan.join(" ").trim();
+    if (!baslik) return null;
+    const kategori = kategoriTahminEt(kalan);
+
+    if (basDak === null) {
+        // Saat yok: boş vakitte listesine
+        return { gun: -1, bas: null, bit: null, metin: baslik, kategori, herHafta };
+    }
+    if (bitDak === null) bitDak = Math.min(basDak + 60, 1439); // süre verilmediyse 1 saat
+    if (bitDak <= basDak) return null;
+    if (gun === null) gun = varsayilanGun;
+
+    const cevir = (dk) => String(Math.floor(dk / 60)).padStart(2, "0") + ":" + String(dk % 60).padStart(2, "0");
+    return { gun, bas: cevir(basDak), bit: cevir(bitDak), metin: baslik, kategori, herHafta };
+}
+
 // Hiç kayıt var mı? (örnek program önerisi için)
 function tamamenBosMu() {
     if (veri.tekrarlayan.length > 0) return false;

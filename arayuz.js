@@ -541,6 +541,45 @@ document.getElementById("yedekYukleGiris").onchange = (e) => {
     okuyucu.readAsText(dosya);
 };
 
+// ---------- Hızlı ekleme çubuğu ----------
+function bildirimGoster(mesaj) {
+    let kutu = document.getElementById("bildirim");
+    if (!kutu) {
+        kutu = document.createElement("div");
+        kutu.id = "bildirim";
+        document.body.appendChild(kutu);
+    }
+    kutu.textContent = mesaj;
+    kutu.classList.add("acik");
+    clearTimeout(kutu._zaman);
+    kutu._zaman = setTimeout(() => kutu.classList.remove("acik"), 2600);
+}
+
+function hizliEkle() {
+    const giris = document.getElementById("hizliGiris");
+    const bugunGun = (new Date().getDay() + 6) % 7;
+    const sonuc = hizliAyristir(giris.value, bugunGun);
+    if (!sonuc) {
+        bildirimGoster("Anlayamadım 🤔 Örnek: salı 16-17 matematik");
+        return;
+    }
+    blokEkle(bakilanAnahtar(), sonuc, sonuc.herHafta);
+    giris.value = "";
+    ciz();
+    const kat = KATEGORILER[sonuc.kategori];
+    if (sonuc.gun === -1) {
+        bildirimGoster("✔ Boş vakitte listesine eklendi: " + kat.emoji + " " + sonuc.metin);
+    } else {
+        bildirimGoster("✔ " + GUN_ADLARI[sonuc.gun] + " " + sonuc.bas + "–" + sonuc.bit +
+                       " → " + kat.emoji + " " + sonuc.metin + (sonuc.herHafta ? " (her hafta 🔁)" : ""));
+    }
+}
+
+document.getElementById("hizliEkleBtn").onclick = hizliEkle;
+document.getElementById("hizliGiris").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") hizliEkle();
+});
+
 // ---------- Üst düğmeler ----------
 document.getElementById("oncekiHafta").onclick = () => { haftaKaydirma--; ciz(); };
 document.getElementById("sonrakiHafta").onclick = () => { haftaKaydirma++; ciz(); };
