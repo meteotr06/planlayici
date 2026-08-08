@@ -23,7 +23,9 @@
             <button id="buHafta">Bugün</button>
         </div>
         <div class="sag-grup">
+            <span id="seri" title="Seri: üst üste kaç gün iş bitirdin"></span>
             <span id="ozet"></span>
+            <button id="bildirimBtn" class="ikincil" title="Blok başlamadan hatırlatma"></button>
             <button id="ornekBtn" class="ikincil">🏫 Örnek program</button>
             <button id="yeniBlokBtn" class="birincil">＋ Blok Ekle</button>
         </div>
@@ -88,6 +90,7 @@
                         <input id="yedekYukleGiris" type="file" accept=".json" />
                     </label>
                 </div>
+                <button id="icsBtn" class="ikincil" title="Google Takvim ve telefon takvimine aktarılabilir dosya">📅 Takvime aktar (.ics)</button>
             </section>
         </aside>
     </div>
@@ -138,6 +141,7 @@
             <div class="dugmeler">
                 <button id="mSil" class="tehlike">Sil</button>
                 <button id="mKopyala" class="ikincil" title="Bu bilgilerle yeni bir kopya oluşturur">Kopyala</button>
+                <button id="mOdak" class="ikincil" title="25 dakikalık odak sayacı başlat">🎯 Odaklan</button>
                 <span class="bosluk"></span>
                 <button id="mIptal" class="ikincil">Vazgeç</button>
                 <button id="mKaydet" class="birincil">Kaydet</button>
@@ -193,6 +197,21 @@
                 <span class="bosluk"></span>
                 <button id="sIptal" class="ikincil">Vazgeç</button>
                 <button id="sOlustur" class="birincil">Programı Kur</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🎯 Odak modu (Pomodoro) -->
+    <div id="odakKaplama" class="kaplama gizli">
+        <div class="pencere odak-pencere">
+            <h3 id="odakBaslik">🎯 Odak Modu</h3>
+            <div id="odakFaz" class="odak-faz">Odaklanma</div>
+            <div id="odakSayac" class="odak-sayac">25:00</div>
+            <div id="odakTur" class="odak-tur"></div>
+            <div class="dugmeler">
+                <button id="odakBitir" class="tehlike">Bitir</button>
+                <span class="bosluk"></span>
+                <button id="odakBaslat" class="birincil">▶ Başlat</button>
             </div>
         </div>
     </div>

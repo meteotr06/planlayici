@@ -63,6 +63,12 @@ function ustBariCiz() {
         : "<b>" + o.biten + "</b>/" + o.toplam + " tamam · " + sureMetni(o.dakikaToplam) + " planlı";
 
     document.getElementById("ornekBtn").style.display = tamamenBosMu() ? "" : "none";
+
+    // 🔥 Seri göstergesi
+    const seri = seriHesapla();
+    const seriEl = document.getElementById("seri");
+    seriEl.textContent = seri > 0 ? "🔥 " + seri + " gün" : "";
+    seriEl.style.display = seri > 0 ? "" : "none";
 }
 
 // ---------- Kategori filtresi (göstergeler) ----------
@@ -515,6 +521,123 @@ document.getElementById("mSil").onclick = () => {
     ciz();
 };
 
+// ---------- 🎯 Odak modu (Pomodoro) ----------
+// 25 dk odak + 5 dk mola döngüsü. Biten her odak turu güne "odak dakikası" yazar,
+// bu da 🔥 seriyi besler (Forest/TickTick'teki gibi).
+const ODAK_SN = 25 * 60, MOLA_SN = 5 * 60;
+const odakKaplama = document.getElementById("odakKaplama");
+let odak = null; // {faz, kalan, calisiyor, sayac, tur}
+
+function odakAc(blokAdi) {
+    odak = { faz: "odak", kalan: ODAK_SN, calisiyor: false, sayac: null, tur: 1 };
+    document.getElementById("odakBaslik").textContent = "🎯 " + blokAdi;
+    odakGoster();
+    odakKaplama.classList.remove("gizli");
+}
+
+function odakGoster() {
+    const dk = Math.floor(odak.kalan / 60), sn = odak.kalan % 60;
+    document.getElementById("odakSayac").textContent =
+        String(dk).padStart(2, "0") + ":" + String(sn).padStart(2, "0");
+    document.getElementById("odakFaz").textContent =
+        odak.faz === "odak" ? "Odaklanma — telefonu bırak! 📵" : "Mola — esne, su iç ☕";
+    document.getElementById("odakTur").textContent = odak.tur + ". tur";
+    document.getElementById("odakBaslat").textContent = odak.calisiyor ? "⏸ Duraklat" : "▶ Başlat";
+    document.querySelector(".odak-pencere").classList.toggle("molada", odak.faz === "mola");
+}
+
+document.getElementById("odakBaslat").onclick = () => {
+    odak.calisiyor = !odak.calisiyor;
+    clearInterval(odak.sayac);
+    if (odak.calisiyor) {
+        odak.sayac = setInterval(() => {
+            odak.kalan--;
+            if (odak.kalan <= 0) {
+                if (odak.faz === "odak") {
+                    odakEkle(25); // tam pomodoro tamamlandı
+                    bildirimGoster("🎉 25 dk odak tamamlandı! 5 dk mola hakkın var.");
+                    odak.faz = "mola"; odak.kalan = MOLA_SN;
+                } else {
+                    odak.faz = "odak"; odak.kalan = ODAK_SN; odak.tur++;
+                    bildirimGoster("💪 Mola bitti, " + odak.tur + ". tura başlıyoruz!");
+                }
+                ciz();
+            }
+            odakGoster();
+        }, 1000);
+    }
+    odakGoster();
+};
+
+document.getElementById("odakBitir").onclick = () => {
+    clearInterval(odak.sayac);
+    if (odak.faz === "odak") {
+        const gecenDk = Math.floor((ODAK_SN - odak.kalan) / 60);
+        if (gecenDk >= 1) {
+            odakEkle(gecenDk);
+            bildirimGoster("✔ " + gecenDk + " dk odak kaydedildi.");
+        }
+    }
+    odak = null;
+    odakKaplama.classList.add("gizli");
+    ciz();
+};
+
+document.getElementById("mOdak").onclick = () => {
+    const b = blokBul(bakilanAnahtar(), duzenlenenId);
+    pencereKapat();
+    odakAc(b ? b.metin : "Odak");
+};
+
+// ---------- 🔔 Blok hatırlatmaları ----------
+// Uygulama açıkken blok başlamadan 5 dk önce ve başlarken bildirim gösterir.
+const bildirilenler = new Set();
+
+function bildirimDugmesiGuncelle() {
+    const dugme = document.getElementById("bildirimBtn");
+    if (!("Notification" in window)) { dugme.style.display = "none"; return; }
+    const kapali = localStorage.getItem("bildirimKapali") === "1";
+    const acik = Notification.permission === "granted" && !kapali;
+    dugme.textContent = acik ? "🔔" : "🔕";
+    dugme.title = acik ? "Hatırlatmalar açık (kapatmak için tıkla)"
+                       : "Hatırlatmaları aç: blok başlamadan haber veririm";
+}
+
+document.getElementById("bildirimBtn").onclick = async () => {
+    if (Notification.permission !== "granted") {
+        const izin = await Notification.requestPermission();
+        if (izin === "granted") {
+            localStorage.removeItem("bildirimKapali");
+            bildirimGoster("🔔 Hatırlatmalar açık! Blok başlamadan 5 dk önce haber veririm.");
+        }
+    } else {
+        const kapali = localStorage.getItem("bildirimKapali") === "1";
+        if (kapali) localStorage.removeItem("bildirimKapali");
+        else localStorage.setItem("bildirimKapali", "1");
+    }
+    bildirimDugmesiGuncelle();
+};
+
+setInterval(() => {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    if (localStorage.getItem("bildirimKapali") === "1") return;
+    const simdi = new Date();
+    const dk = simdi.getHours() * 60 + simdi.getMinutes();
+    const bugunGun = (simdi.getDay() + 6) % 7;
+    for (const b of gunBloklari(haftaAnahtari(simdi), bugunGun)) {
+        if (!b.bas || b.tamam) continue;
+        for (const [fark, ek] of [[5, " 5 dakika sonra başlıyor"], [0, " şimdi başlıyor!"]]) {
+            if (dakika(b.bas) - dk === fark) {
+                const kimlik = b.id + "-" + fark + "-" + simdi.toDateString();
+                if (!bildirilenler.has(kimlik)) {
+                    bildirilenler.add(kimlik);
+                    new Notification("📅 " + b.metin, { body: b.bas + "–" + b.bit + ek, icon: "ikon-192.png" });
+                }
+            }
+        }
+    }
+}, 30000);
+
 // ---------- Yedekleme ----------
 document.getElementById("yedekAlBtn").onclick = () => {
     const a = document.createElement("a");
@@ -523,6 +646,14 @@ document.getElementById("yedekAlBtn").onclick = () => {
     a.download = "planlayici-yedek-" + t.getFullYear() + "-" +
         String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0") + ".json";
     a.click();
+};
+
+document.getElementById("icsBtn").onclick = () => {
+    const a = document.createElement("a");
+    a.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(icsUret());
+    a.download = "haftalik-plan.ics";
+    a.click();
+    bildirimGoster("📅 İndirilen dosyayı Google Takvim'e ya da telefonun takvimine içe aktarabilirsin.");
 };
 
 document.getElementById("yedekYukleGiris").onchange = (e) => {
@@ -733,4 +864,5 @@ setInterval(() => {
 
 // Başlangıç
 yukle();
+bildirimDugmesiGuncelle();
 ciz();

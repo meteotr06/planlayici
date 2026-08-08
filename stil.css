@@ -500,6 +500,27 @@ header h1 span { color: var(--vurgu); }
 }
 .tehlike:hover { background: rgba(255, 107, 107, 0.1); }
 
+/* 🎯 Odak modu */
+#seri { color: #ff9d4d; font-weight: 700; font-size: 0.88rem; }
+
+.odak-pencere { align-items: center; text-align: center; }
+.odak-pencere.molada { border-color: var(--yesil); }
+
+.odak-faz { color: var(--soluk); font-size: 0.9rem; }
+.odak-pencere.molada .odak-faz { color: var(--yesil); }
+
+.odak-sayac {
+    font-size: 4.2rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    color: var(--vurgu);
+}
+.odak-pencere.molada .odak-sayac { color: var(--yesil); }
+
+.odak-tur { color: var(--soluk); font-size: 0.8rem; }
+.odak-pencere .dugmeler { width: 100%; }
+
 /* ---------- Dar ekran ---------- */
 @media (max-width: 900px) {
     body { height: auto; overflow: auto; padding: 8px; }

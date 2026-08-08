@@ -14,7 +14,8 @@ let veri = {
     surum: 2,
     tekrarlayan: [],
     haftalar: {},
-    hedefler: []   // sınav / teslim tarihi geri sayımları [{id, ad, tarih "2026-08-20"}]
+    hedefler: [],  // sınav / teslim tarihi geri sayımları [{id, ad, tarih "2026-08-20"}]
+    gunlukIz: {}   // gün bazlı başarı izi { "2026-08-08": { tamamlanan: 3, odakDk: 50 } }
 };
 
 // ---------- Kaydet / Yükle ----------
@@ -27,6 +28,7 @@ function yukle() {
     if (!ham) return;
     veri = JSON.parse(ham);
     veri.hedefler = veri.hedefler || [];
+    veri.gunlukIz = veri.gunlukIz || {};
     eskiVeriyiTasi();
 }
 
@@ -167,17 +169,84 @@ function blokTamamMi(anahtar, id) {
 
 function blokIsaretle(anahtar, id) {
     const hafta = haftaKaydi(anahtar);
+    let tamamlandiMi;
     const normal = hafta.bloklar.find(b => b.id === id);
     if (normal) {
         normal.tamam = !normal.tamam;
+        tamamlandiMi = normal.tamam;
     } else {
         // Tekrarlayan bloğun tamamlanması SADECE o haftaya işlenir,
         // böylece yeni haftada yine işaretsiz gelir.
         const yeri = hafta.tamamlananTekrar.indexOf(id);
-        if (yeri === -1) hafta.tamamlananTekrar.push(id);
-        else hafta.tamamlananTekrar.splice(yeri, 1);
+        if (yeri === -1) { hafta.tamamlananTekrar.push(id); tamamlandiMi = true; }
+        else { hafta.tamamlananTekrar.splice(yeri, 1); tamamlandiMi = false; }
     }
+    // Seri (🔥) takibi için günlük ize işle
+    const iz = gunIzi(new Date());
+    iz.tamamlanan = Math.max(0, (iz.tamamlanan || 0) + (tamamlandiMi ? 1 : -1));
     kaydet();
+}
+
+// ---------- Günlük iz / seri / odak ----------
+function tarihAnahtari(t) {
+    return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") +
+           "-" + String(t.getDate()).padStart(2, "0");
+}
+
+function gunIzi(t) {
+    const k = tarihAnahtari(t);
+    if (!veri.gunlukIz[k]) veri.gunlukIz[k] = { tamamlanan: 0, odakDk: 0 };
+    return veri.gunlukIz[k];
+}
+
+// Odak (Pomodoro) dakikalarını bugünün izine ekler.
+function odakEkle(dk) {
+    if (dk <= 0) return;
+    const iz = gunIzi(new Date());
+    iz.odakDk = (iz.odakDk || 0) + dk;
+    kaydet();
+}
+
+// Kaç gündür zincir kırılmamış? (o gün 1+ blok bitirmek YA DA 25+ dk odak = sayılır)
+function seriHesapla() {
+    const sayilirMi = (iz) => iz && ((iz.tamamlanan || 0) > 0 || (iz.odakDk || 0) >= 25);
+    const t = new Date();
+    let seri = 0;
+    if (!sayilirMi(veri.gunlukIz[tarihAnahtari(t)])) {
+        t.setDate(t.getDate() - 1); // bugün henüz bir şey yapılmadıysa zinciri bozma, dünden say
+    }
+    while (sayilirMi(veri.gunlukIz[tarihAnahtari(t)])) {
+        seri++;
+        t.setDate(t.getDate() - 1);
+    }
+    return seri;
+}
+
+// ---------- Takvim dosyası (.ics) dışa aktarma ----------
+// Google Takvim / telefon takvimi bu dosyayı doğrudan içe aktarabilir.
+function icsUret() {
+    const pzt = haftaBaslangici(new Date());
+    const GUN_KODU = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
+    const satirlar = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Planlayici//TR"];
+    const zaman = (gunFarki, saat) => {
+        const d = new Date(pzt);
+        d.setDate(d.getDate() + gunFarki);
+        return tarihAnahtari(d).replace(/-/g, "") + "T" + saat.replace(":", "") + "00";
+    };
+    const olayYaz = (b, tekrarli) => {
+        if (!b.bas || !b.bit || b.gun < 0) return;
+        satirlar.push("BEGIN:VEVENT");
+        satirlar.push("UID:" + b.id + "@planlayici");
+        satirlar.push("DTSTART:" + zaman(b.gun, b.bas));
+        satirlar.push("DTEND:" + zaman(b.gun, b.bit));
+        if (tekrarli) satirlar.push("RRULE:FREQ=WEEKLY;BYDAY=" + GUN_KODU[b.gun]);
+        satirlar.push("SUMMARY:" + b.metin.replace(/[,;\\]/g, " "));
+        satirlar.push("END:VEVENT");
+    };
+    for (const b of veri.tekrarlayan) olayYaz(b, true);
+    for (const b of haftaKaydi(haftaAnahtari(new Date())).bloklar) olayYaz(b, false);
+    satirlar.push("END:VCALENDAR");
+    return satirlar.join("\r\n");
 }
 
 function blokBul(anahtar, id) {
@@ -453,6 +522,8 @@ function gunlukBrifing(anahtar, bugunGun, suAnDakika) {
     } else {
         metin += " Bugünlük program bitti.";
     }
+    const odakDk = (veri.gunlukIz[tarihAnahtari(new Date())] || {}).odakDk || 0;
+    if (odakDk > 0) metin += " · 🎯 Bugün " + odakDk + " dk odaklandın.";
     return metin;
 }
 
