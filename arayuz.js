@@ -550,9 +550,21 @@ function asistanCiz() {
     const kap = document.getElementById("asistanListe");
     kap.innerHTML = "";
 
+    // Günlük brifing (sadece bu haftaya bakarken)
+    if (haftaKaydirma === 0) {
+        const simdi = new Date();
+        const brifing = document.createElement("div");
+        brifing.className = "brifing";
+        brifing.textContent = gunlukBrifing(anahtar, bugunGun, simdi.getHours() * 60 + simdi.getMinutes());
+        kap.appendChild(brifing);
+    }
+
     const oneriler = oneriUret(anahtar, bugunGun).filter(o => !gizlenenOneriler.has(o.id));
     if (oneriler.length === 0) {
-        kap.innerHTML = "<div class='panel-bos'>Şu an önerim yok — program iyi görünüyor 👍</div>";
+        const bos = document.createElement("div");
+        bos.className = "panel-bos";
+        bos.textContent = "Şu an önerim yok — program iyi görünüyor 👍";
+        kap.appendChild(bos);
         return;
     }
     for (const o of oneriler) {
@@ -567,6 +579,7 @@ function asistanCiz() {
         uygula.textContent = "Uygula";
         uygula.onclick = () => {
             for (const b of o.bloklar) blokEkle(anahtar, b, o.herHafta);
+            for (const id of (o.silinecekler || [])) blokSil(anahtar, id); // listeden takvime taşınanlar
             gizlenenOneriler.add(o.id);
             bildirimGoster("✔ " + o.bloklar.length + " blok eklendi");
             ciz();
@@ -601,6 +614,23 @@ const sihirbazKaplama = document.getElementById("sihirbazKaplama");
 document.getElementById("sihirbazBtn").onclick = () => sihirbazKaplama.classList.remove("gizli");
 document.getElementById("sIptal").onclick = () => sihirbazKaplama.classList.add("gizli");
 sihirbazKaplama.onclick = (e) => { if (e.target === sihirbazKaplama) sihirbazKaplama.classList.add("gizli"); };
+
+// Hazır şablon düğmeleri
+for (const dugme of document.querySelectorAll(".sablon")) {
+    dugme.onclick = () => {
+        const adlar = { okul: "Okul haftası", sinav: "Sınav haftası", tatil: "Tatil haftası" };
+        if (veri.tekrarlayan.length > 0 &&
+            !confirm("Zaten 🔁 tekrarlayan bir programın var. Silinip yerine \"" +
+                     adlar[dugme.dataset.tur] + "\" kurulsun mu?")) {
+            return;
+        }
+        tekrarlayanTemizle();
+        sablonYukle(dugme.dataset.tur);
+        sihirbazKaplama.classList.add("gizli");
+        bildirimGoster("✔ " + adlar[dugme.dataset.tur] + " planı kuruldu — istediğin gibi düzenle!");
+        ciz();
+    };
+}
 
 document.getElementById("sOkulVar").onchange = (e) => {
     document.getElementById("sOkulSaatleri").style.display = e.target.checked ? "" : "none";

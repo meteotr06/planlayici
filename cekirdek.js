@@ -410,9 +410,90 @@ function kategoriVarMi(anahtar, kategori) {
     return false;
 }
 
-// Asistanın önerileri: [{id, baslik, aciklama, bloklar, herHafta}]
+// Görev listesini haftanın boş saatlerine dağıtır (bugünden ileriye).
+// Hafta içi 16:00 sonrası, hafta sonu 09:00 sonrası; aynı öneride üst üste bindirmez.
+function bosYereYerlestir(anahtar, gorevler, bastanGun) {
+    const bloklar = [], sil = [];
+    const ekDolu = {};
+    for (const gorev of gorevler) {
+        let yerlesti = false;
+        for (let g = Math.max(bastanGun, 0); g < 7 && !yerlesti; g++) {
+            const sinirBas = g < 5 ? 16 * 60 : 9 * 60;
+            for (const a of bosAraliklar(anahtar, g, 45, sinirBas, 22 * 60)) {
+                let bas = a.bas;
+                for (const [ds, de] of (ekDolu[g] || []).sort((x, y) => x[0] - y[0])) {
+                    if (bas < de && bas + 45 > ds) bas = de;
+                }
+                if (bas + 45 <= a.bit) {
+                    const bit = Math.min(bas + 60, a.bit);
+                    bloklar.push({ gun: g, bas: saatYaz(bas), bit: saatYaz(bit),
+                                   metin: gorev.metin, kategori: gorev.kategori });
+                    (ekDolu[g] = ekDolu[g] || []).push([bas, bit]);
+                    sil.push(gorev.id);
+                    yerlesti = true;
+                    break;
+                }
+            }
+        }
+    }
+    return { bloklar, sil };
+}
+
+// Günlük brifing: "Bugün 6 blok, 2 tamam. Sıradaki: 19:15 Matematik" gibi.
+function gunlukBrifing(anahtar, bugunGun, suAnDakika) {
+    const bugunku = gunBloklari(anahtar, bugunGun).filter(b => b.bas);
+    if (bugunku.length === 0) return "Bugün planın boş 🙂 Hızlı ekleme çubuğuyla bir şeyler ekleyebilirsin.";
+    const biten = bugunku.filter(b => b.tamam).length;
+    const siradaki = bugunku.find(b => !b.tamam && dakika(b.bit) > suAnDakika);
+    let metin = "Bugün " + bugunku.length + " blok var, " + biten + " tamam.";
+    if (siradaki) {
+        metin += " Sıradaki: " + siradaki.bas + " " + siradaki.metin;
+    } else if (biten === bugunku.length) {
+        metin += " Hepsi bitti, helal! 🎉";
+    } else {
+        metin += " Bugünlük program bitti.";
+    }
+    return metin;
+}
+
+// Asistanın önerileri: [{id, baslik, aciklama, bloklar, herHafta, silinecekler}]
 function oneriUret(anahtar, bugunGun) {
     const oneriler = [];
+
+    // 0) "Boş vakitte" bekleyen görevleri boş saatlere yerleştirmeyi öner
+    const bekleyen = gunBloklari(anahtar, -1).filter(b => !b.tamam && !b.tekrarli);
+    if (bekleyen.length > 0) {
+        const sonuc = bosYereYerlestir(anahtar, bekleyen.slice(0, 3), bugunGun);
+        if (sonuc.bloklar.length) {
+            oneriler.push({
+                id: "yerlestir-" + sonuc.sil.join("."),
+                baslik: "📋 Yapılacaklarını takvime koyayım",
+                aciklama: "Boş vakitte listende " + bekleyen.length + " görev bekliyor. " +
+                          sonuc.bloklar.length + " tanesini boş saatlerine yerleştirebilirim (listeden takvime taşınır).",
+                bloklar: sonuc.bloklar, silinecekler: sonuc.sil, herHafta: false
+            });
+        }
+    }
+
+    // 0.5) Geçen günlerde kaçan (yapılmamış) blokları ileri taşımayı öner
+    const kacanlar = [];
+    for (let g = 0; g < bugunGun; g++) {
+        for (const b of gunBloklari(anahtar, g)) {
+            if (!b.tamam && !b.tekrarli && b.bas) kacanlar.push(b);
+        }
+    }
+    if (kacanlar.length > 0) {
+        const sonuc = bosYereYerlestir(anahtar, kacanlar.slice(0, 3), bugunGun);
+        if (sonuc.bloklar.length) {
+            oneriler.push({
+                id: "kacan-" + sonuc.sil.join("."),
+                baslik: "⏰ Kaçan " + kacanlar.length + " bloğun var",
+                aciklama: "Geçen günlerde yapılmayan işleri unutma! " + sonuc.bloklar.length +
+                          " tanesini önümüzdeki boş saatlere taşıyayım mı?",
+                bloklar: sonuc.bloklar, silinecekler: sonuc.sil, herHafta: false
+            });
+        }
+    }
 
     // 1) Yaklaşan sınavlar/hedefler için çalışma blokları
     for (const h of veri.hedefler) {
@@ -547,20 +628,58 @@ function tamamenBosMu() {
     return true;
 }
 
-// Boş başlayanlara örnek bir lise programı kurar (hepsi 🔁 tekrarlayan).
-function ornekProgramYukle() {
+// Hazır örnek planlar (hepsi 🔁 tekrarlayan): "okul", "sinav", "tatil"
+function sablonYukle(tur) {
     const ekle = (gun, bas, bit, metin, kategori) =>
         veri.tekrarlayan.push({ id: benzersizId(), gun, bas, bit, metin, kategori });
-    for (let gun = 0; gun < 5; gun++) {
-        ekle(gun, "07:00", "07:45", "Kahvaltı + hazırlık", "yemek");
-        ekle(gun, "08:30", "15:30", "Okul", "ders");
-        ekle(gun, "17:00", "18:00", "Dinlenme / serbest", "serbest");
-        ekle(gun, "19:00", "20:30", "Ödev + günün tekrarı", "etut");
-        ekle(gun, "23:00", "23:59", "Uyku", "uyku");
+
+    if (tur === "sinav") {
+        // Sınav haftası: yoğun ama molali çalışma
+        for (let gun = 0; gun < 5; gun++) {
+            ekle(gun, "07:00", "07:45", "Kahvaltı + hazırlık", "yemek");
+            ekle(gun, "08:30", "15:30", "Okul", "ders");
+            ekle(gun, "16:30", "17:00", "Dinlenme", "serbest");
+            ekle(gun, "17:00", "18:45", "Soru çözümü", "etut");
+            ekle(gun, "19:00", "19:45", "Akşam yemeği", "yemek");
+            ekle(gun, "20:00", "21:45", "Konu tekrarı", "etut");
+            ekle(gun, "22:30", "23:59", "Uyku", "uyku");
+        }
+        ekle(5, "10:00", "13:00", "Deneme sınavı", "ders");
+        ekle(5, "15:00", "16:30", "Yanlış analizi", "etut");
+        ekle(5, "17:00", "19:00", "Serbest zaman", "serbest");
+        ekle(5, "23:00", "23:59", "Uyku", "uyku");
+        ekle(6, "11:00", "13:00", "Genel tekrar", "etut");
+        ekle(6, "15:00", "17:00", "Eksik konular", "etut");
+        ekle(6, "22:30", "23:59", "Uyku", "uyku");
+    } else if (tur === "tatil") {
+        // Tatil haftası: bol serbest, hafif tekrar, düzeni koru
+        for (let gun = 0; gun < 7; gun++) {
+            ekle(gun, "09:30", "10:15", "Kahvaltı", "yemek");
+            ekle(gun, "11:00", "13:00", "Hobi / serbest", "serbest");
+            ekle(gun, "13:00", "13:45", "Öğle yemeği", "yemek");
+            if (gun < 5) ekle(gun, "15:00", "16:00", "Hafif ders tekrarı", "etut");
+            if (gun === 1 || gun === 3 || gun === 5) ekle(gun, "17:00", "18:00", "Spor", "spor");
+            ekle(gun, "20:00", "22:00", "Film / oyun", "serbest");
+            ekle(gun, "23:30", "23:59", "Uyku", "uyku");
+        }
+    } else {
+        // Normal okul haftası
+        for (let gun = 0; gun < 5; gun++) {
+            ekle(gun, "07:00", "07:45", "Kahvaltı + hazırlık", "yemek");
+            ekle(gun, "08:30", "15:30", "Okul", "ders");
+            ekle(gun, "17:00", "18:00", "Dinlenme / serbest", "serbest");
+            ekle(gun, "19:00", "20:30", "Ödev + günün tekrarı", "etut");
+            ekle(gun, "23:00", "23:59", "Uyku", "uyku");
+        }
+        ekle(5, "10:00", "12:00", "Haftalık ders tekrarı", "etut");
+        ekle(5, "14:00", "15:30", "Spor", "spor");
+        ekle(6, "11:00", "13:00", "Gelecek haftaya hazırlık", "etut");
+        ekle(6, "15:00", "18:00", "Serbest zaman", "serbest");
     }
-    ekle(5, "10:00", "12:00", "Haftalık ders tekrarı", "etut");
-    ekle(5, "14:00", "15:30", "Spor", "spor");
-    ekle(6, "11:00", "13:00", "Gelecek haftaya hazırlık", "etut");
-    ekle(6, "15:00", "18:00", "Serbest zaman", "serbest");
     kaydet();
+}
+
+// Boş başlayanlara örnek bir lise programı kurar (üst bar düğmesi bunu kullanır).
+function ornekProgramYukle() {
+    sablonYukle("okul");
 }
