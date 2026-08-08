@@ -1303,6 +1303,73 @@ document.getElementById("aliskanlikEkleBtn").onclick = () => {
     ciz();
 };
 
+// ---------- 📖 Kaynak takibi ----------
+function kaynakCiz() {
+    const kap = document.getElementById("kaynakListe");
+    kap.innerHTML = "";
+    const ozet = kaynakOzeti();
+    document.getElementById("kaynakOzet").textContent =
+        ozet.toplam ? ozet.biten + "/" + ozet.toplam + " bitti" : "";
+
+    if (veri.kaynaklar.length === 0) {
+        kap.innerHTML = "<div class='panel-bos'>Soru bankalarını ve kitaplarını ekle; çözdükçe ilerlet, yüzdeni gör. Sohbete \"kaynaklarım\" yazınca da listeler.</div>";
+        return;
+    }
+    for (const k of veri.kaynaklar) {
+        const yuzde = Math.round(k.yapilan / k.toplam * 100);
+        const bitti = k.yapilan >= k.toplam;
+        const satir = document.createElement("div");
+        satir.className = "kaynak-satir" + (bitti ? " bitti" : "");
+        satir.innerHTML =
+            "<div class='kaynak-ust'><span class='kaynak-ad'>" + (bitti ? "✅ " : "📖 ") + esc(k.ad) +
+            (k.ders ? " <small>(" + esc(k.ders) + ")</small>" : "") + "</span>" +
+            "<b>" + k.yapilan + "/" + k.toplam + " · %" + yuzde + "</b></div>" +
+            "<div class='ist-cubuk-kap'><div class='ist-cubuk" + (bitti ? " yesil" : "") +
+            "' style='width:" + yuzde + "%; " + (bitti ? "" : "background: var(--vurgu);") + "'></div></div>";
+
+        const dugmeler = document.createElement("div");
+        dugmeler.className = "kaynak-dugmeler";
+        for (const adet of [5, 10, 20]) {
+            const b = document.createElement("button");
+            b.textContent = "+" + adet;
+            b.onclick = () => {
+                if (kaynakIlerle(k.id, adet)) {
+                    konfetiPatlat();
+                    bildirimGoster("🎉 \"" + k.ad + "\" BİTTİ! Yeni kaynağa hazırsın!");
+                }
+                ciz();
+            };
+            dugmeler.appendChild(b);
+        }
+        const geri = document.createElement("button");
+        geri.textContent = "−";
+        geri.title = "Yanlışlıkla bastıysan geri al";
+        geri.onclick = () => { kaynakIlerle(k.id, -5); ciz(); };
+        dugmeler.appendChild(geri);
+        const sil = document.createElement("button");
+        sil.className = "konu-sil";
+        sil.textContent = "✕";
+        sil.onclick = () => { if (confirm("\"" + k.ad + "\" listeden silinsin mi?")) { kaynakSil(k.id); ciz(); } };
+        dugmeler.appendChild(sil);
+
+        satir.appendChild(dugmeler);
+        kap.appendChild(satir);
+    }
+}
+
+document.getElementById("kaynakEkleBtn").onclick = () => {
+    const ad = document.getElementById("kaynakAd");
+    const ders = document.getElementById("kaynakDers");
+    const toplam = document.getElementById("kaynakToplam");
+    if (!kaynakEkle(ad.value, ders.value, toplam.value)) {
+        alert("Kaynak adı ve toplam soru/sayfa sayısı gerekli.");
+        return;
+    }
+    ad.value = ""; ders.value = ""; toplam.value = "";
+    bildirimGoster("📖 Kaynak eklendi — çözdükçe + düğmeleriyle ilerlet!");
+    ciz();
+};
+
 // ---------- 🎉 Konfeti ----------
 let konfetiPatladiMi = false; // aynı gün bir kez patlasın
 
@@ -1475,6 +1542,7 @@ function ciz() {
     denemeCiz();
     konuCiz();
     gelisimCiz();
+    kaynakCiz();
     aliskanlikCiz();
     hedeflerCiz();
     esnekCiz();

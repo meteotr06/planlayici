@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="ikon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="stylesheet" href="stil.css?v=12" />
+    <link rel="stylesheet" href="stil.css?v=13" />
 </head>
 <body>
     <header>
@@ -114,6 +114,19 @@
                     <input id="konuDersGiris" type="text" placeholder="Ders" />
                     <input id="konuAdGiris" type="text" placeholder="Konu (ör. Türev)" />
                     <button id="konuEkleBtn" class="birincil">+</button>
+                </div>
+            </details>
+
+            <details class="panel">
+                <summary>📖 Kaynaklarım <span id="kaynakOzet" class="ozet-kucuk"></span></summary>
+                <div id="kaynakListe"></div>
+                <div class="ekle-mini">
+                    <input id="kaynakAd" type="text" placeholder="Kaynak adı (ör. Karekök Mat.)" />
+                </div>
+                <div class="ekle-mini">
+                    <input id="kaynakDers" type="text" placeholder="Ders" />
+                    <input id="kaynakToplam" type="number" min="1" placeholder="Toplam soru/sayfa" />
+                    <button id="kaynakEkleBtn" class="birincil">+</button>
                 </div>
             </details>
 
@@ -349,8 +362,8 @@
     </div>
 
     <!-- Önce çekirdek (mantık), sonra arayüz (görünüm) yüklenir -->
-    <script src="cekirdek.js?v=12"></script>
-    <script src="arayuz.js?v=12"></script>
+    <script src="cekirdek.js?v=13"></script>
+    <script src="arayuz.js?v=13"></script>
     <script>
         // Çevrimdışı çalışma (PWA): service worker'ı kaydet
         if ("serviceWorker" in navigator && location.protocol !== "file:") {

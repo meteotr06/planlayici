@@ -25,7 +25,8 @@ let veri = {
     aliskanliklar: [], // günlük alışkanlıklar [{id, ad}]
     aliskanlikIz: {},  // hangi gün hangileri yapıldı { "2026-08-08": ["id1", "id2"] }
     ayarlar: { odakDk: 25, molaDk: 5, varsayilanSure: 60, ses: true },
-    soruHedefleri: {} // ders başına günlük soru hedefi { "matematik": 50 }
+    soruHedefleri: {},// ders başına günlük soru hedefi { "matematik": 50 }
+    kaynaklar: []     // kitap / soru bankası takibi [{id, ad, ders, toplam, yapilan}]
 };
 
 // ---------- Kaydet / Yükle ----------
@@ -49,6 +50,7 @@ function yukle() {
     veri.aliskanlikIz = veri.aliskanlikIz || {};
     veri.ayarlar = Object.assign({ odakDk: 25, molaDk: 5, varsayilanSure: 60, ses: true }, veri.ayarlar || {});
     veri.soruHedefleri = veri.soruHedefleri || {};
+    veri.kaynaklar = veri.kaynaklar || [];
     eskiVeriyiTasi();
 }
 
@@ -626,6 +628,13 @@ function sohbetCevabi(mesaj) {
         if (!toplam) return "Bugün henüz soru saymadın. 🔢 Soru Sayacı panelinden çözdükçe ekle!";
         return "Bugün " + toplam + " soru çözdün (" + parcalar.join(", ") + "). Devam! 💪";
     }
+    if (/kaynak|kitap|banka/.test(m)) {
+        if (!veri.kaynaklar.length) return "Henüz kaynak eklememişsin. 📖 Kaynaklarım panelinden soru bankalarını ekle, ilerlemeni takip edeyim.";
+        return "📖 Kaynakların:\n" + veri.kaynaklar.map(k =>
+            (k.yapilan >= k.toplam ? "✅ " : "▫️ ") + k.ad +
+            (k.ders ? " (" + k.ders + ")" : "") + ": " + k.yapilan + "/" + k.toplam +
+            " (%" + Math.round(k.yapilan / k.toplam * 100) + ")").join("\n");
+    }
     if (/(seri|zincir|streak)/.test(m)) {
         const seri = seriHesapla();
         return seri > 0 ? "🔥 " + seri + " gündür zincir kırılmadı. Bugün de bir blok bitir, devam etsin!"
@@ -1135,6 +1144,38 @@ function soruHedefAyarla(ders, adet) {
     if (adet > 0) veri.soruHedefleri[ders] = adet;
     else delete veri.soruHedefleri[ders];
     kaydet();
+}
+
+// ---------- 📖 Kaynak takibi ----------
+// Soru bankası / kitap ilerlemesi: "Karekök Matematik 120/340"
+function kaynakEkle(ad, ders, toplam) {
+    ad = (ad || "").trim();
+    toplam = Number(toplam) || 0;
+    if (!ad || toplam <= 0) return false;
+    veri.kaynaklar.push({ id: benzersizId(), ad, ders: (ders || "").trim(), toplam, yapilan: 0 });
+    kaydet();
+    return true;
+}
+
+// adet: pozitif = ilerledi, negatif = geri al. Bitti mi bilgisini döndürür.
+function kaynakIlerle(id, adet) {
+    const k = veri.kaynaklar.find(x => x.id === id);
+    if (!k) return false;
+    const onceBitmisti = k.yapilan >= k.toplam;
+    k.yapilan = Math.max(0, Math.min(k.toplam, k.yapilan + adet));
+    kaydet();
+    return !onceBitmisti && k.yapilan >= k.toplam; // yeni bitti mi?
+}
+
+function kaynakSil(id) {
+    veri.kaynaklar = veri.kaynaklar.filter(k => k.id !== id);
+    kaydet();
+}
+
+function kaynakOzeti() {
+    const toplam = veri.kaynaklar.length;
+    const biten = veri.kaynaklar.filter(k => k.yapilan >= k.toplam).length;
+    return { toplam, biten };
 }
 
 // ---------- 🧠 İçgörüler ----------
