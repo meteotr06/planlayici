@@ -780,6 +780,18 @@ details.panel[open] summary::after { content: "▾"; }
 #karneBtn { width: 100%; }
 #aVeriSil { width: 100%; }
 
+.soru-sayi.hedef-tamam { color: #ffd94d; }
+.icgoru {
+    background: var(--kart-acik);
+    border-radius: 8px;
+    padding: 6px 9px;
+    font-size: 0.76rem;
+    line-height: 1.4;
+    margin-top: 4px;
+}
+.trend-grafik { margin-top: 6px; }
+#icgoruKutu { display: flex; flex-direction: column; gap: 2px; }
+
 /* ---------- Dar ekran ---------- */
 @media (max-width: 900px) {
     body { height: auto; overflow: auto; padding: 8px; }

@@ -24,7 +24,8 @@ let veri = {
     sonCheckin: null,// günlük karşılama en son hangi gün yapıldı ("2026-08-08")
     aliskanliklar: [], // günlük alışkanlıklar [{id, ad}]
     aliskanlikIz: {},  // hangi gün hangileri yapıldı { "2026-08-08": ["id1", "id2"] }
-    ayarlar: { odakDk: 25, molaDk: 5, varsayilanSure: 60, ses: true }
+    ayarlar: { odakDk: 25, molaDk: 5, varsayilanSure: 60, ses: true },
+    soruHedefleri: {} // ders başına günlük soru hedefi { "matematik": 50 }
 };
 
 // ---------- Kaydet / Yükle ----------
@@ -47,6 +48,7 @@ function yukle() {
     veri.aliskanliklar = veri.aliskanliklar || [];
     veri.aliskanlikIz = veri.aliskanlikIz || {};
     veri.ayarlar = Object.assign({ odakDk: 25, molaDk: 5, varsayilanSure: 60, ses: true }, veri.ayarlar || {});
+    veri.soruHedefleri = veri.soruHedefleri || {};
     eskiVeriyiTasi();
 }
 
@@ -1125,6 +1127,85 @@ function sihirbazPlanUret(c) {
 function tekrarlayanTemizle() {
     veri.tekrarlayan = [];
     kaydet();
+}
+
+// ---------- 🎯 Soru hedefleri ----------
+function soruHedefAyarla(ders, adet) {
+    ders = ders.toLocaleLowerCase("tr");
+    if (adet > 0) veri.soruHedefleri[ders] = adet;
+    else delete veri.soruHedefleri[ders];
+    kaydet();
+}
+
+// ---------- 🧠 İçgörüler ----------
+// Son N haftanın toplam puanları (trend çizgisi için, eskiden yeniye)
+function haftaTrendi(haftaSayisi) {
+    const simdi = new Date();
+    const sonuc = [];
+    for (let i = haftaSayisi - 1; i >= 0; i--) {
+        const t = new Date(simdi);
+        t.setDate(t.getDate() - i * 7);
+        const pzt = haftaBaslangici(t);
+        let puan = 0;
+        for (let g = 0; g < 7; g++) {
+            const d = new Date(pzt);
+            d.setDate(d.getDate() + g);
+            puan += gunPuani(tarihAnahtari(d));
+        }
+        sonuc.push({ hafta: haftaAnahtari(t), puan });
+    }
+    return sonuc;
+}
+
+// Verilerine bakıp kişisel tespitler çıkarır
+function icgoruUret() {
+    const GUNLER = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+    const liste = [];
+
+    // 1) En verimli hafta günü (ortalama puana göre)
+    const gunToplam = [0, 0, 0, 0, 0, 0, 0], gunSayisi = [0, 0, 0, 0, 0, 0, 0];
+    for (const k of puanGunleri()) {
+        const p = gunPuani(k);
+        if (p <= 0) continue;
+        const g = (new Date(k + "T12:00:00").getDay() + 6) % 7;
+        gunToplam[g] += p;
+        gunSayisi[g]++;
+    }
+    let enIyi = -1, enIyiOrt = 0;
+    for (let g = 0; g < 7; g++) {
+        if (gunSayisi[g] > 0) {
+            const ort = gunToplam[g] / gunSayisi[g];
+            if (ort > enIyiOrt) { enIyiOrt = ort; enIyi = g; }
+        }
+    }
+    if (enIyi >= 0) liste.push("📈 En verimli günün: " + GUNLER[enIyi]);
+
+    // 2) Ortalama odak skoru
+    let seansT = 0, skorT = 0;
+    for (const k in veri.gunlukIz) {
+        const iz = veri.gunlukIz[k];
+        if (iz.seans) { seansT += iz.seans; skorT += iz.skorToplam; }
+    }
+    if (seansT > 0) liste.push("🎯 Ortalama odak skorun: " + Math.round(skorT / seansT) + "/100");
+
+    // 3) En çok soru çözülen ders
+    const dersT = {};
+    for (const g in veri.sorular) {
+        for (const d in veri.sorular[g]) dersT[d] = (dersT[d] || 0) + veri.sorular[g][d];
+    }
+    const enDers = Object.entries(dersT).sort((a, b) => b[1] - a[1])[0];
+    if (enDers) liste.push("🔢 Toplamda en çok soru: " + enDers[0] + " (" + enDers[1] + " soru)");
+
+    // 4) Bu hafta / geçen hafta tempo kıyası
+    const trend = haftaTrendi(2);
+    if (trend.length === 2 && trend[0].puan > 0) {
+        const fark = trend[1].puan - trend[0].puan;
+        liste.push(fark >= 0
+            ? "🚀 Tempo yükseliyor: geçen haftadan +" + fark + " puan öndesin"
+            : "🪫 Tempo düşük: geçen haftadan " + fark + " puan gerideysin — ufak bir blokla açılış yap!");
+    }
+
+    return liste;
 }
 
 // ---------- ⚙️ Ayarlar ----------

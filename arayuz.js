@@ -108,9 +108,17 @@ function soruCiz() {
         const ad = document.createElement("span");
         ad.className = "soru-ad";
         ad.textContent = ders;
+        ad.title = "Günlük hedef koymak için tıkla";
+        ad.style.cursor = "pointer";
+        ad.onclick = () => {
+            const cevap = prompt("\"" + ders + "\" için günlük soru hedefi kaç olsun? (0 = hedefi kaldır)",
+                                 veri.soruHedefleri[ders] || "");
+            if (cevap !== null) { soruHedefAyarla(ders, Number(cevap) || 0); ciz(); }
+        };
+        const hedef = veri.soruHedefleri[ders];
         const sayi = document.createElement("b");
-        sayi.className = "soru-sayi";
-        sayi.textContent = bugun[ders] || 0;
+        sayi.className = "soru-sayi" + (hedef && (bugun[ders] || 0) >= hedef ? " hedef-tamam" : "");
+        sayi.textContent = (bugun[ders] || 0) + (hedef ? "/" + hedef : "");
         const dugmeler = document.createElement("span");
         dugmeler.className = "soru-dugmeler";
         for (const adet of [1, 5, 10]) {
@@ -265,6 +273,30 @@ function gelisimCiz() {
     }
     html += "</div><div class='panel-bos'>Son 15 hafta — kare ne kadar koyu, o gün o kadar çalışmışsın</div>";
     document.getElementById("isiHaritasi").innerHTML = html;
+
+    // 🧠 İçgörüler + 8 haftalık trend çizgisi
+    document.getElementById("icgoruKutu")?.remove(); // eski çizimden kalanı temizle
+    const icgoruKap = document.createElement("div");
+    icgoruKap.id = "icgoruKutu";
+    const icgorular = icgoruUret();
+    if (icgorular.length) {
+        icgoruKap.innerHTML = "<div class='konu-ders'><span>🧠 İçgörüler</span></div>" +
+            icgorular.map(i => "<div class='icgoru'>" + esc(i) + "</div>").join("");
+    }
+    const trend = haftaTrendi(8);
+    if (trend.some(t => t.puan > 0)) {
+        const G = 250, Y = 50, kenar = 4;
+        const enCok = Math.max(...trend.map(t => t.puan), 1);
+        const x = i => kenar + i * (G - 2 * kenar) / (trend.length - 1);
+        const y = p => Y - kenar - p / enCok * (Y - 2 * kenar);
+        icgoruKap.innerHTML +=
+            "<svg viewBox='0 0 " + G + " " + Y + "' class='deneme-grafik trend-grafik'>" +
+            "<polyline points='" + trend.map((t, i) => x(i) + "," + y(t.puan)).join(" ") + "' class='net-cizgi'/>" +
+            trend.map((t, i) => "<circle cx='" + x(i) + "' cy='" + y(t.puan) + "' r='2.5' class='net-nokta'><title>" +
+                                t.hafta + ": " + t.puan + " puan</title></circle>").join("") +
+            "</svg><div class='panel-bos'>Son 8 haftanın tempo çizgisi</div>";
+    }
+    document.getElementById("isiHaritasi").after(icgoruKap);
 
     // Haftalık rekorlar
     const rekor = haftalikRekorlar();
@@ -1070,6 +1102,44 @@ function yaziOnerileriniDoldur() {
         cipKap.appendChild(cip);
     }
 }
+
+// ---------- 🎤 Sesli komut ----------
+const SesTanima = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SesTanima) {
+    document.getElementById("mikrofonBtn").onclick = () => {
+        const tanima = new SesTanima();
+        tanima.lang = "tr-TR";
+        tanima.onresult = (e) => {
+            const metin = e.results[0][0].transcript;
+            const giris = document.getElementById("hizliGiris");
+            giris.value = metin;
+            giris.focus();
+            bildirimGoster("🎤 \"" + metin + "\" — doğruysa Enter'a bas, ekleyeyim!");
+        };
+        tanima.onerror = () => bildirimGoster("🎤 Duyamadım, tekrar dener misin?");
+        tanima.start();
+        bildirimGoster("🎤 Dinliyorum... (ör. \"yarın on altı matematik\")");
+    };
+} else {
+    document.getElementById("mikrofonBtn").style.display = "none";
+}
+
+// ---------- ⌨️ Klavye kısayolları ----------
+document.addEventListener("keydown", (e) => {
+    const aktif = document.activeElement;
+    if (aktif && ["INPUT", "TEXTAREA", "SELECT"].includes(aktif.tagName)) return;
+    if (document.querySelector(".kaplama:not(.gizli)")) return; // pencere açıkken karışma
+    const tus = e.key.toLowerCase();
+    if (tus === "n") { document.getElementById("yeniBlokBtn").click(); }
+    else if (tus === "t") { haftaKaydirma = 0; ciz(); }
+    else if (e.key === "ArrowLeft") { haftaKaydirma--; ciz(); }
+    else if (e.key === "ArrowRight") { haftaKaydirma++; ciz(); }
+    else if (tus === "g") { document.getElementById("gorunumBtn").click(); }
+    else if (tus === "a") { document.getElementById("ayarlarBtn").click(); }
+    else if (e.key === "?") {
+        bildirimGoster("⌨️ N: yeni blok · T: bugün · ←→: hafta · G: görünüm · A: ayarlar");
+    }
+});
 
 // ---------- 🪄 Sihirbaz ----------
 const sihirbazKaplama = document.getElementById("sihirbazKaplama");
