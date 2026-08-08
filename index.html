@@ -184,7 +184,8 @@
                 <label class="alan">Tür
                     <select id="mKategori">
                         <option value="ders">📚 Ders</option>
-                        <option value="etut">✍️ Etüt / Ödev</option>
+                        <option value="is">💼 İş</option>
+                        <option value="etut">✍️ Çalışma / Ödev</option>
                         <option value="spor">🏃 Spor</option>
                         <option value="yemek">🍽️ Yemek</option>
                         <option value="uyku">😴 Uyku</option>
@@ -218,6 +219,7 @@
                 <div class="sablon-dugmeler">
                     <button type="button" class="ikincil sablon" data-tur="okul">🏫 Okul haftası</button>
                     <button type="button" class="ikincil sablon" data-tur="sinav">📝 Sınav haftası</button>
+                    <button type="button" class="ikincil sablon" data-tur="is">💼 İş haftası</button>
                     <button type="button" class="ikincil sablon" data-tur="tatil">🏖️ Tatil haftası</button>
                 </div>
             </div>
@@ -229,19 +231,19 @@
                     <input id="sYat" type="time" value="23:00" />
                 </label>
             </div>
-            <label class="tekrar-kutu"><input id="sOkulVar" type="checkbox" checked />🏫 Hafta içi okula gidiyorum</label>
+            <label class="tekrar-kutu"><input id="sOkulVar" type="checkbox" checked />🏫💼 Hafta içi okula / işe gidiyorum</label>
             <div class="satir" id="sOkulSaatleri">
-                <label class="alan">Okul başlangıç
+                <label class="alan">Başlangıç saati
                     <input id="sOkulBas" type="time" value="08:30" />
                 </label>
-                <label class="alan">Okul bitiş
+                <label class="alan">Bitiş saati
                     <input id="sOkulBit" type="time" value="15:30" />
                 </label>
             </div>
-            <label class="alan">Hangi derslere ağırlık vereceksin? (virgülle ayır)
-                <input id="sDersler" type="text" placeholder="ör. matematik, fizik, ingilizce" />
+            <label class="alan">Nelere ağırlık vereceksin? (virgülle ayır — ders, proje, hobi...)
+                <input id="sDersler" type="text" placeholder="ör. matematik, ingilizce, gitar" />
             </label>
-            <label class="alan">Okul sonrası günde kaç saat çalışacaksın?
+            <label class="alan">Okul/iş sonrası günde kaç saat çalışacaksın?
                 <select id="sCalisma">
                     <option value="1">1 saat</option>
                     <option value="1.5">1,5 saat</option>
@@ -273,7 +275,7 @@
                 </div>
             </label>
             <label class="alan">Bugün neler yapman gerekiyor? (her satıra bir iş — istersen saat de yaz)
-                <textarea id="checkinGorevler" rows="5" placeholder="matematik 40 soru&#10;16-17 fizik konu tekrarı&#10;ingilizce kelime ezberle&#10;odayı topla"></textarea>
+                <textarea id="checkinGorevler" rows="5" placeholder="matematik 40 soru&#10;16-17 toplantı / konu tekrarı&#10;alışverişi hallet&#10;odayı topla"></textarea>
             </label>
             <div id="ckCipler" class="cip-onerileri"></div>
             <div class="panel-bos">Saat yazarsan o saate koyarım; yazmazsan bugünün boş saatlerine ben yerleştiririm. Enerjine göre blok süresini ayarlarım (😴 45 dk · 🙂 60 dk · 🔥 90 dk).</div>

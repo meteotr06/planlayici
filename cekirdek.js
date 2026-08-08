@@ -481,9 +481,10 @@ function gunlukPlanla(satirlar, enerji, bugunGun, simdiDak) {
 // ---------- ✍️ Yazım yardımcısı ----------
 // Hazır güzel cümleler + kullanıcının en sık kullandığı başlıklar
 const HAZIR_CUMLELER = [
-    "Matematik soru çözümü", "Fizik konu tekrarı", "İngilizce kelime ezberi",
-    "Deneme yanlış analizi", "Kitap okuma", "Ders notlarını düzenleme",
-    "Yürüyüş / spor", "Yarının çantasını hazırlama"
+    "Matematik soru çözümü", "İngilizce kelime ezberi", "Kitap okuma",
+    "Ders / iş notlarını düzenleme", "Yürüyüş / spor", "Ev işleri ve toparlanma",
+    "Alışveriş listesini halletme", "Aileyle vakit geçirme", "Yarını planlama",
+    "Fatura ve ödemeler"
 ];
 
 function gecmisBasliklar() {
@@ -747,6 +748,8 @@ const KATEGORI_IPUCLARI = {
     ders:    ["matematik", "mat", "fizik", "kimya", "biyoloji", "türkçe", "turkce", "tarih",
               "coğrafya", "cografya", "ingilizce", "edebiyat", "geometri", "felsefe", "din",
               "almanca", "ders", "sınav", "sinav", "deneme", "okul", "kurs", "dershane"],
+    is:      ["iş", "is", "toplantı", "toplanti", "mesai", "vardiya", "müşteri", "musteri",
+              "rapor", "sunum", "ofis", "fatura", "banka", "evrak"],
     etut:    ["ödev", "odev", "etüt", "etut", "tekrar", "çalış", "calis", "soru", "test", "konu", "proje"],
     spor:    ["spor", "futbol", "basketbol", "voleybol", "koşu", "kosu", "antrenman",
               "yüzme", "yuzme", "fitness", "maç", "mac", "yürüyüş", "yuruyus"],
@@ -1051,7 +1054,7 @@ function sihirbazPlanUret(c) {
 
     for (let g = 0; g < 5; g++) { // hafta içi
         ekle(g, uyan, uyan + 40, "Kahvaltı + hazırlık", "yemek");
-        if (c.okulVar) ekle(g, dakika(c.okulBas) ?? 510, dakika(c.okulBit) ?? 930, "Okul", "ders");
+        if (c.okulVar) ekle(g, dakika(c.okulBas) ?? 510, dakika(c.okulBit) ?? 930, "Okul / İş", "ders");
         if (c.sporGunleri.includes(g)) ekle(g, 16 * 60 + 45, 18 * 60, "Spor", "spor");
         ekle(g, 18 * 60 + 10, 19 * 60, "Akşam yemeği", "yemek");
         const sure = Math.round((c.gunlukCalisma || 2) * 60);
@@ -1106,6 +1109,23 @@ function sablonYukle(tur) {
         ekle(6, "11:00", "13:00", "Genel tekrar", "etut");
         ekle(6, "15:00", "17:00", "Eksik konular", "etut");
         ekle(6, "22:30", "23:59", "Uyku", "uyku");
+    } else if (tur === "is") {
+        // İş haftası: mesai + akşam kendine zaman
+        for (let gun = 0; gun < 5; gun++) {
+            ekle(gun, "07:30", "08:15", "Kahvaltı + hazırlık", "yemek");
+            ekle(gun, "09:00", "12:30", "İş", "is");
+            ekle(gun, "12:30", "13:30", "Öğle arası", "yemek");
+            ekle(gun, "13:30", "18:00", "İş", "is");
+            ekle(gun, "19:00", "19:45", "Akşam yemeği", "yemek");
+            ekle(gun, "20:30", "22:00", "Kendine zaman", "serbest");
+            ekle(gun, "23:00", "23:59", "Uyku", "uyku");
+        }
+        ekle(1, "18:15", "19:00", "Spor", "spor");
+        ekle(3, "18:15", "19:00", "Spor", "spor");
+        ekle(5, "10:00", "12:00", "Ev işleri", "genel");
+        ekle(5, "14:00", "18:00", "Sosyal / gezme", "serbest");
+        ekle(6, "11:00", "13:00", "Haftalık plan + hazırlık", "genel");
+        ekle(6, "15:00", "18:00", "Dinlenme", "serbest");
     } else if (tur === "tatil") {
         // Tatil haftası: bol serbest, hafif tekrar, düzeni koru
         for (let gun = 0; gun < 7; gun++) {

@@ -9,7 +9,8 @@ const AY_ADLARI = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
 
 const KATEGORILER = {
     ders:    { ad: "Ders",        emoji: "📚", renk: "#ffb84d" },
-    etut:    { ad: "Etüt / Ödev", emoji: "✍️", renk: "#ff8fa3" },
+    is:      { ad: "İş",          emoji: "💼", renk: "#5eead4" },
+    etut:    { ad: "Çalışma",     emoji: "✍️", renk: "#ff8fa3" },
     spor:    { ad: "Spor",        emoji: "🏃", renk: "#4dd6ff" },
     yemek:   { ad: "Yemek",       emoji: "🍽️", renk: "#9ee37d" },
     uyku:    { ad: "Uyku",        emoji: "😴", renk: "#8a93b8" },
@@ -1080,7 +1081,7 @@ sihirbazKaplama.onclick = (e) => { if (e.target === sihirbazKaplama) sihirbazKap
 // Hazır şablon düğmeleri
 for (const dugme of document.querySelectorAll(".sablon")) {
     dugme.onclick = () => {
-        const adlar = { okul: "Okul haftası", sinav: "Sınav haftası", tatil: "Tatil haftası" };
+        const adlar = { okul: "Okul haftası", sinav: "Sınav haftası", is: "İş haftası", tatil: "Tatil haftası" };
         if (veri.tekrarlayan.length > 0 &&
             !confirm("Zaten 🔁 tekrarlayan bir programın var. Silinip yerine \"" +
                      adlar[dugme.dataset.tur] + "\" kurulsun mu?")) {
