@@ -27,6 +27,8 @@
             <span id="seviye" title="Seviyen — blok bitir, odaklan, soru çöz: XP kazan"></span>
             <span id="seri" title="Seri: üst üste kaç gün iş bitirdin"></span>
             <span id="ozet"></span>
+            <button id="gorunumBtn" class="ikincil" title="Bugün / hafta görünümü"></button>
+            <button id="temaBtn" class="ikincil" title="Açık / koyu tema"></button>
             <button id="checkinBtn" class="ikincil" title="Günlük planlama: bugün ne yapacaksın?">☀️</button>
             <button id="bildirimBtn" class="ikincil" title="Blok başlamadan hatırlatma"></button>
             <button id="ornekBtn" class="ikincil">🏫 Örnek program</button>
@@ -114,10 +116,20 @@
             </details>
 
             <details class="panel">
+                <summary>✅ Alışkanlıklar <span id="aliskanlikOzet" class="ozet-kucuk"></span></summary>
+                <div id="aliskanlikListe"></div>
+                <div class="ekle-mini">
+                    <input id="aliskanlikGiris" type="text" placeholder="ör. Su iç, erken kalk, kitap oku" />
+                    <button id="aliskanlikEkleBtn" class="birincil">+</button>
+                </div>
+            </details>
+
+            <details class="panel">
                 <summary>🏆 Gelişim <span id="gelisimOzet" class="ozet-kucuk"></span></summary>
                 <div id="xpKutu"></div>
                 <div id="isiHaritasi"></div>
                 <div id="rekorListe"></div>
+                <button id="karneBtn" class="ikincil">📸 Haftalık karneni indir</button>
             </details>
 
             <section class="panel">

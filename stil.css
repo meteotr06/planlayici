@@ -4,10 +4,24 @@
     --kart: #1a1f33;
     --kart-acik: #232a45;
     --cizgi: #262d49;
+    --kenar: #2e3654;
     --yazi: #e8eaf2;
     --soluk: #8b91a7;
     --vurgu: #6c8cff;
     --yesil: #3ddc84;
+    --girdi-tema: dark;
+}
+
+/* 🌗 Açık tema */
+body.acik {
+    --arka: #eef1f8;
+    --kart: #ffffff;
+    --kart-acik: #e9edf7;
+    --cizgi: #dde3f0;
+    --kenar: #c9d2e6;
+    --yazi: #1d2436;
+    --soluk: #67708a;
+    --girdi-tema: light;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -42,7 +56,7 @@ header h1 span { color: var(--vurgu); }
 
 .hafta-gezinti button, .ikincil {
     background: var(--kart);
-    border: 1px solid #2e3654;
+    border: 1px solid var(--kenar);
     color: var(--yazi);
     padding: 7px 12px;
     border-radius: 10px;
@@ -329,7 +343,7 @@ header h1 span { color: var(--vurgu); }
 .gun-secim { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
 .gun-cip {
     background: var(--arka);
-    border: 1px solid #2e3654;
+    border: 1px solid var(--kenar);
     color: var(--soluk);
     border-radius: 8px;
     padding: 5px 9px;
@@ -442,13 +456,13 @@ header h1 span { color: var(--vurgu); }
 .hedef-ekle-alt { display: flex; gap: 6px; }
 .hedef-ekle input, .esnek-ekle input {
     background: var(--arka);
-    border: 1px solid #2e3654;
+    border: 1px solid var(--kenar);
     border-radius: 8px;
     color: var(--yazi);
     padding: 7px 10px;
     font-size: 0.82rem;
     font-family: inherit;
-    color-scheme: dark;
+    color-scheme: var(--girdi-tema);
     min-width: 0;
 }
 .hedef-ekle input:focus, .esnek-ekle input:focus { outline: 1px solid var(--vurgu); }
@@ -494,7 +508,7 @@ header h1 span { color: var(--vurgu); }
 
 .pencere {
     background: var(--kart);
-    border: 1px solid #2e3654;
+    border: 1px solid var(--kenar);
     border-radius: 16px;
     padding: 18px;
     width: min(460px, 92vw);
@@ -509,13 +523,13 @@ header h1 span { color: var(--vurgu); }
 .alan { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--soluk); flex: 1; }
 .alan input, .alan select, .alan textarea {
     background: var(--arka);
-    border: 1px solid #2e3654;
+    border: 1px solid var(--kenar);
     border-radius: 8px;
     color: var(--yazi);
     padding: 8px;
     font-size: 0.9rem;
     font-family: inherit;
-    color-scheme: dark;
+    color-scheme: var(--girdi-tema);
     resize: vertical;
 }
 .alan input:focus, .alan select:focus, .alan textarea:focus { outline: 1px solid var(--vurgu); }
@@ -574,13 +588,13 @@ details.panel[open] summary::after { content: "▾"; }
 .ekle-mini { display: flex; gap: 6px; }
 .ekle-mini input, .ekle-mini select {
     background: var(--arka);
-    border: 1px solid #2e3654;
+    border: 1px solid var(--kenar);
     border-radius: 8px;
     color: var(--yazi);
     padding: 6px 8px;
     font-size: 0.8rem;
     font-family: inherit;
-    color-scheme: dark;
+    color-scheme: var(--girdi-tema);
     min-width: 0;
     flex: 1;
 }
@@ -610,7 +624,7 @@ details.panel[open] summary::after { content: "▾"; }
 .soru-dugmeler { display: flex; gap: 3px; }
 .soru-dugmeler button {
     background: var(--arka);
-    border: 1px solid #2e3654;
+    border: 1px solid var(--kenar);
     color: var(--yazi);
     border-radius: 6px;
     padding: 3px 7px;
@@ -710,6 +724,41 @@ details.panel[open] summary::after { content: "▾"; }
 
 .odak-tur { color: var(--soluk); font-size: 0.8rem; }
 .odak-pencere .dugmeler { width: 100%; }
+
+/* ✅ Alışkanlıklar */
+.aliskanlik-satir {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--kart-acik);
+    border-radius: 10px;
+    padding: 6px 8px;
+}
+.aliskanlik-satir input[type="checkbox"] { accent-color: var(--yesil); width: 16px; height: 16px; }
+.aliskanlik-ad { flex: 1; font-size: 0.82rem; }
+.aliskanlik-noktalar { display: flex; gap: 3px; }
+.aliskanlik-noktalar .nokta {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--arka);
+    border: 1px solid var(--kenar);
+}
+.aliskanlik-noktalar .nokta.dolu { background: var(--yesil); border-color: var(--yesil); }
+
+/* 🎉 Konfeti */
+.konfeti {
+    position: fixed;
+    top: -12px;
+    z-index: 100;
+    border-radius: 2px;
+    pointer-events: none;
+    animation: konfeti-dus linear forwards;
+}
+@keyframes konfeti-dus {
+    to { transform: translateY(105vh) rotate(720deg); opacity: 0.6; }
+}
+
+#karneBtn { width: 100%; }
 
 /* ---------- Dar ekran ---------- */
 @media (max-width: 900px) {

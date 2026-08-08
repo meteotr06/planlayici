@@ -21,7 +21,9 @@ let veri = {
     konular: [],   // konu takip listesi [{id, ders, ad, durum 0=görmedim 1=tekrar 2=bitti}]
     hedefNet: null,// deneme grafiğindeki hedef çizgisi
     soruDersler: [],// soru sayacındaki kalıcı ders adları
-    sonCheckin: null// günlük karşılama en son hangi gün yapıldı ("2026-08-08")
+    sonCheckin: null,// günlük karşılama en son hangi gün yapıldı ("2026-08-08")
+    aliskanliklar: [], // günlük alışkanlıklar [{id, ad}]
+    aliskanlikIz: {}   // hangi gün hangileri yapıldı { "2026-08-08": ["id1", "id2"] }
 };
 
 // ---------- Kaydet / Yükle ----------
@@ -41,6 +43,8 @@ function yukle() {
     veri.soruDersler = veri.soruDersler || [];
     if (veri.hedefNet === undefined) veri.hedefNet = null;
     if (veri.sonCheckin === undefined) veri.sonCheckin = null;
+    veri.aliskanliklar = veri.aliskanliklar || [];
+    veri.aliskanlikIz = veri.aliskanlikIz || {};
     eskiVeriyiTasi();
 }
 
@@ -328,19 +332,21 @@ function konuSil(id) {
 }
 
 // ---------- ⭐ XP / Seviye ----------
-// Her iş puan getirir: biten blok 10, odak dakikası 2, çözülen soru 1.
+// Her iş puan getirir: biten blok 10, odak dakikası 2, soru 1, alışkanlık 5.
 function gunPuani(tarihK) {
     const iz = veri.gunlukIz[tarihK] || {};
-    return (iz.tamamlanan || 0) * 10 + (iz.odakDk || 0) * 2 + gunSoruToplam(tarihK);
+    return (iz.tamamlanan || 0) * 10 + (iz.odakDk || 0) * 2 + gunSoruToplam(tarihK) +
+           (veri.aliskanlikIz[tarihK] || []).length * 5;
+}
+
+function puanGunleri() {
+    return new Set([...Object.keys(veri.gunlukIz), ...Object.keys(veri.sorular),
+                    ...Object.keys(veri.aliskanlikIz)]);
 }
 
 function seviyeBilgi() {
     let xp = 0;
-    const gunler = new Set([...Object.keys(veri.gunlukIz), ...Object.keys(veri.sorular)]);
-    for (const g of gunler) {
-        const iz = veri.gunlukIz[g] || {};
-        xp += (iz.tamamlanan || 0) * 10 + (iz.odakDk || 0) * 2 + gunSoruToplam(g);
-    }
+    for (const g of puanGunleri()) xp += gunPuani(g);
     const seviye = Math.floor(Math.sqrt(xp / 100)) + 1;
     const buSeviyeXp = (seviye - 1) * (seviye - 1) * 100;
     const sonrakiXp = seviye * seviye * 100;
@@ -354,11 +360,7 @@ function isiHaritasiVerisi(gunSayisi) {
     t.setDate(t.getDate() - gunSayisi + 1);
     for (let i = 0; i < gunSayisi; i++) {
         const k = tarihAnahtari(t);
-        const iz = veri.gunlukIz[k] || {};
-        sonuc.push({
-            tarih: k,
-            puan: (iz.tamamlanan || 0) * 10 + (iz.odakDk || 0) * 2 + gunSoruToplam(k)
-        });
+        sonuc.push({ tarih: k, puan: gunPuani(k) });
         t.setDate(t.getDate() + 1);
     }
     return sonuc;
@@ -366,12 +368,9 @@ function isiHaritasiVerisi(gunSayisi) {
 
 function haftalikRekorlar() {
     const haftalar = {};
-    const gunler = new Set([...Object.keys(veri.gunlukIz), ...Object.keys(veri.sorular)]);
-    for (const g of gunler) {
+    for (const g of puanGunleri()) {
         const hafta = haftaAnahtari(new Date(g + "T12:00:00"));
-        const iz = veri.gunlukIz[g] || {};
-        haftalar[hafta] = (haftalar[hafta] || 0) +
-            (iz.tamamlanan || 0) * 10 + (iz.odakDk || 0) * 2 + gunSoruToplam(g);
+        haftalar[hafta] = (haftalar[hafta] || 0) + gunPuani(g);
     }
     const liste = Object.entries(haftalar)
         .map(([hafta, puan]) => ({ hafta, puan }))
@@ -394,6 +393,55 @@ function bugunOdakSkoru() {
     const iz = veri.gunlukIz[tarihAnahtari(new Date())] || {};
     if (!iz.seans) return null;
     return Math.round(iz.skorToplam / iz.seans);
+}
+
+// ---------- ✅ Alışkanlık takibi ----------
+function aliskanlikEkle(ad) {
+    ad = ad.trim();
+    if (!ad) return;
+    veri.aliskanliklar.push({ id: benzersizId(), ad });
+    kaydet();
+}
+
+function aliskanlikSil(id) {
+    veri.aliskanliklar = veri.aliskanliklar.filter(a => a.id !== id);
+    for (const g in veri.aliskanlikIz) {
+        veri.aliskanlikIz[g] = veri.aliskanlikIz[g].filter(x => x !== id);
+    }
+    kaydet();
+}
+
+function aliskanlikYapildiMi(id, tarihK) {
+    return (veri.aliskanlikIz[tarihK] || []).includes(id);
+}
+
+// Bugün için işaretle/kaldır
+function aliskanlikIsaretle(id) {
+    const k = tarihAnahtari(new Date());
+    if (!veri.aliskanlikIz[k]) veri.aliskanlikIz[k] = [];
+    const yeri = veri.aliskanlikIz[k].indexOf(id);
+    if (yeri === -1) veri.aliskanlikIz[k].push(id);
+    else veri.aliskanlikIz[k].splice(yeri, 1);
+    kaydet();
+}
+
+// Bu alışkanlık kaç gündür aralıksız yapılıyor?
+function aliskanlikSerisi(id) {
+    const t = new Date();
+    let seri = 0;
+    if (!aliskanlikYapildiMi(id, tarihAnahtari(t))) t.setDate(t.getDate() - 1);
+    while (aliskanlikYapildiMi(id, tarihAnahtari(t))) {
+        seri++;
+        t.setDate(t.getDate() - 1);
+    }
+    return seri;
+}
+
+// Bugün tüm saatli bloklar bitti mi? (konfeti için 🎉)
+function bugunHersheyBittiMi() {
+    const simdi = new Date();
+    const liste = gunBloklari(haftaAnahtari(simdi), (simdi.getDay() + 6) % 7).filter(b => b.bas);
+    return liste.length > 0 && liste.every(b => b.tamam);
 }
 
 // ---------- 💬 Günün sözü ----------

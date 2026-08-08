@@ -23,6 +23,7 @@ let haftaKaydirma = 0;          // 0 = bu hafta, -1 = geçen, 1 = gelecek
 let duzenlenenId = null;        // pencere açıkken düzenlenen blok (yeni ise null)
 let ilkCizim = true;
 let gizliKategoriler = new Set(); // filtreyle gizlenenler
+let gorunum = localStorage.getItem("gorunum") || "hafta"; // "hafta" | "bugun"
 
 function bakilanTarih() {
     const t = new Date();
@@ -473,19 +474,27 @@ function takvimCiz() {
     const kutu = document.getElementById("takvimKutu");
     const eskiKaydirma = ilkCizim ? null : kutu.scrollTop;
 
+    // Bugün görünümü: sadece bugünün sütunu (bu haftadayken)
+    const bugunGunNo = (new Date().getDay() + 6) % 7;
+    const gunler = (gorunum === "bugun" && haftaKaydirma === 0)
+        ? [bugunGunNo] : [0, 1, 2, 3, 4, 5, 6];
+
     const ic = document.getElementById("takvimIc");
     ic.innerHTML = "";
+    ic.style.gridTemplateColumns = "54px repeat(" + gunler.length + ", minmax(105px, 1fr))";
+    ic.style.minWidth = gunler.length === 1 ? "auto" : "790px";
 
     const kose = document.createElement("div");
     kose.className = "kose";
     ic.appendChild(kose);
 
-    for (let gun = 0; gun < 7; gun++) {
+    for (const gun of gunler) {
         const t = new Date(pzt);
         t.setDate(t.getDate() + gun);
         const b = document.createElement("div");
         b.className = "gun-baslik-hucre" + (t.toDateString() === bugunMetni ? " bugun" : "");
-        b.innerHTML = "<b>" + GUN_KISA[gun] + "</b><span>" + t.getDate() + " " + AY_ADLARI[t.getMonth()].slice(0, 3) + "</span>";
+        b.innerHTML = "<b>" + (gunler.length === 1 ? GUN_ADLARI[gun] : GUN_KISA[gun]) + "</b><span>" +
+                      t.getDate() + " " + AY_ADLARI[t.getMonth()].slice(0, 3) + "</span>";
         ic.appendChild(b);
     }
 
@@ -501,7 +510,7 @@ function takvimCiz() {
     }
     ic.appendChild(saatSutun);
 
-    for (let gun = 0; gun < 7; gun++) {
+    for (const gun of gunler) {
         const t = new Date(pzt);
         t.setDate(t.getDate() + gun);
         const sutun = document.createElement("div");
@@ -818,6 +827,7 @@ document.getElementById("odakBaslat").onclick = () => {
                     odakEkle(25); // tam pomodoro tamamlandı
                     const skor = Math.max(0, 100 - odak.dagilma * 10);
                     odakSkorKaydet(skor);
+                    bipCal();
                     bildirimGoster("🎉 25 dk odak tamamlandı! Odak skorun: " + skor + "/100. Şimdi 5 dk mola.");
                     odak.dagilma = 0;
                     odak.faz = "mola"; odak.kalan = MOLA_SN;
@@ -1162,6 +1172,181 @@ document.getElementById("hizliGiris").addEventListener("keydown", (e) => {
     if (e.key === "Enter") hizliEkle();
 });
 
+// ---------- ✅ Alışkanlıklar ----------
+function aliskanlikCiz() {
+    const kap = document.getElementById("aliskanlikListe");
+    kap.innerHTML = "";
+    const bugunK = tarihAnahtari(new Date());
+    const yapilan = (veri.aliskanlikIz[bugunK] || []).length;
+    document.getElementById("aliskanlikOzet").textContent =
+        veri.aliskanliklar.length ? "bugün " + yapilan + "/" + veri.aliskanliklar.length : "";
+
+    if (veri.aliskanliklar.length === 0) {
+        kap.innerHTML = "<div class='panel-bos'>Her gün tekrar eden küçük rutinlerini ekle: su iç, erken kalk, 10 sayfa kitap... Her işaret +5 XP!</div>";
+        return;
+    }
+    const pzt = haftaBaslangici(new Date());
+    for (const a of veri.aliskanliklar) {
+        const satir = document.createElement("div");
+        satir.className = "aliskanlik-satir";
+
+        const kutu = document.createElement("input");
+        kutu.type = "checkbox";
+        kutu.checked = aliskanlikYapildiMi(a.id, bugunK);
+        kutu.title = "Bugün yaptım";
+        kutu.onchange = () => { aliskanlikIsaretle(a.id); ciz(); };
+
+        const ad = document.createElement("span");
+        ad.className = "aliskanlik-ad";
+        const seri = aliskanlikSerisi(a.id);
+        ad.textContent = a.ad + (seri > 1 ? " 🔥" + seri : "");
+
+        // Haftanın 7 günü: yapılan günler dolu nokta
+        const noktalar = document.createElement("span");
+        noktalar.className = "aliskanlik-noktalar";
+        for (let g = 0; g < 7; g++) {
+            const t = new Date(pzt);
+            t.setDate(t.getDate() + g);
+            const nokta = document.createElement("i");
+            nokta.className = "nokta" + (aliskanlikYapildiMi(a.id, tarihAnahtari(t)) ? " dolu" : "");
+            nokta.title = GUN_KISA[g];
+            noktalar.appendChild(nokta);
+        }
+
+        const sil = document.createElement("button");
+        sil.className = "konu-sil";
+        sil.textContent = "✕";
+        sil.onclick = () => { if (confirm("\"" + a.ad + "\" alışkanlığı silinsin mi?")) { aliskanlikSil(a.id); ciz(); } };
+
+        satir.append(kutu, ad, noktalar, sil);
+        kap.appendChild(satir);
+    }
+}
+
+document.getElementById("aliskanlikEkleBtn").onclick = () => {
+    aliskanlikEkle(document.getElementById("aliskanlikGiris").value);
+    document.getElementById("aliskanlikGiris").value = "";
+    ciz();
+};
+
+// ---------- 🎉 Konfeti ----------
+let konfetiPatladiMi = false; // aynı gün bir kez patlasın
+
+function konfetiPatlat() {
+    const renkler = ["#6c8cff", "#3ddc84", "#ffb84d", "#ff8fa3", "#4dd6ff", "#ffd94d"];
+    for (let i = 0; i < 80; i++) {
+        const parca = document.createElement("div");
+        parca.className = "konfeti";
+        parca.style.left = Math.random() * 100 + "vw";
+        parca.style.background = renkler[Math.floor(Math.random() * renkler.length)];
+        parca.style.animationDelay = (Math.random() * 0.8) + "s";
+        parca.style.animationDuration = (1.6 + Math.random() * 1.4) + "s";
+        parca.style.width = parca.style.height = (6 + Math.random() * 6) + "px";
+        document.body.appendChild(parca);
+        setTimeout(() => parca.remove(), 3500);
+    }
+}
+
+// ---------- 🔊 Bip sesi (Pomodoro bitişi) ----------
+function bipCal() {
+    try {
+        const ses = new (window.AudioContext || window.webkitAudioContext)();
+        for (let i = 0; i < 3; i++) {
+            const osc = ses.createOscillator();
+            const kazanc = ses.createGain();
+            osc.frequency.value = 880;
+            kazanc.gain.setValueAtTime(0.15, ses.currentTime + i * 0.25);
+            kazanc.gain.exponentialRampToValueAtTime(0.001, ses.currentTime + i * 0.25 + 0.2);
+            osc.connect(kazanc).connect(ses.destination);
+            osc.start(ses.currentTime + i * 0.25);
+            osc.stop(ses.currentTime + i * 0.25 + 0.2);
+        }
+    } catch (e) { /* ses desteklenmiyorsa sessiz geç */ }
+}
+
+// ---------- 📸 Haftalık karne (paylaşılabilir resim) ----------
+function karneIndir() {
+    const anahtar = bakilanAnahtar();
+    const o = haftaOzeti(anahtar);
+    const sv = seviyeBilgi();
+    const seri = seriHesapla();
+    const soru = haftaSoruToplam();
+
+    const tuval = document.createElement("canvas");
+    tuval.width = 600; tuval.height = 400;
+    const c = tuval.getContext("2d");
+
+    // Arka plan
+    const gecis = c.createLinearGradient(0, 0, 600, 400);
+    gecis.addColorStop(0, "#1a1f33");
+    gecis.addColorStop(1, "#0f1220");
+    c.fillStyle = gecis;
+    c.fillRect(0, 0, 600, 400);
+    c.fillStyle = "#6c8cff";
+    c.fillRect(0, 0, 600, 6);
+
+    c.fillStyle = "#e8eaf2";
+    c.font = "bold 26px Segoe UI, sans-serif";
+    c.fillText("📅 Haftalık Karnem", 40, 60);
+    c.font = "14px Segoe UI, sans-serif";
+    c.fillStyle = "#8b91a7";
+    c.fillText(document.getElementById("haftaEtiketi").textContent, 40, 85);
+
+    const satirlar = [
+        ["✅ Tamamlanan", o.biten + " / " + o.toplam + " blok"],
+        ["⏱️ Planlanan", Math.floor(o.dakikaToplam / 60) + " saat"],
+        ["🔢 Çözülen soru", soru + " soru"],
+        ["🔥 Seri", seri + " gün"],
+        ["⭐ Seviye", "Sv " + sv.seviye + " (" + sv.xp + " XP)"]
+    ];
+    let y = 135;
+    for (const [ad, deger] of satirlar) {
+        c.font = "16px Segoe UI, sans-serif";
+        c.fillStyle = "#8b91a7";
+        c.fillText(ad, 40, y);
+        c.font = "bold 18px Segoe UI, sans-serif";
+        c.fillStyle = "#e8eaf2";
+        c.fillText(deger, 260, y);
+        y += 44;
+    }
+    c.font = "13px Segoe UI, sans-serif";
+    c.fillStyle = "#6c8cff";
+    c.fillText("meteotr06.github.io/planlayici", 40, 375);
+
+    const a = document.createElement("a");
+    a.href = tuval.toDataURL("image/png");
+    a.download = "haftalik-karne.png";
+    a.click();
+    bildirimGoster("📸 Karnen indirildi — istediğinle paylaşabilirsin!");
+}
+
+document.getElementById("karneBtn").onclick = karneIndir;
+
+// ---------- 🌗 Tema ve görünüm düğmeleri ----------
+function temaUygula() {
+    const acik = localStorage.getItem("tema") === "acik";
+    document.body.classList.toggle("acik", acik);
+    document.getElementById("temaBtn").textContent = acik ? "🌙" : "☀️🌙";
+    document.getElementById("temaBtn").title = acik ? "Koyu temaya geç" : "Açık temaya geç";
+}
+
+document.getElementById("temaBtn").onclick = () => {
+    localStorage.setItem("tema", localStorage.getItem("tema") === "acik" ? "koyu" : "acik");
+    temaUygula();
+};
+
+function gorunumDugmesiGuncelle() {
+    document.getElementById("gorunumBtn").textContent = gorunum === "bugun" ? "🗓️ Hafta" : "📋 Bugün";
+}
+
+document.getElementById("gorunumBtn").onclick = () => {
+    gorunum = gorunum === "bugun" ? "hafta" : "bugun";
+    localStorage.setItem("gorunum", gorunum);
+    if (gorunum === "bugun") haftaKaydirma = 0;
+    gorunumDugmesiGuncelle();
+    ciz();
+};
+
 // ---------- Üst düğmeler ----------
 document.getElementById("oncekiHafta").onclick = () => { haftaKaydirma--; ciz(); };
 document.getElementById("sonrakiHafta").onclick = () => { haftaKaydirma++; ciz(); };
@@ -1184,10 +1369,18 @@ function ciz() {
     denemeCiz();
     konuCiz();
     gelisimCiz();
+    aliskanlikCiz();
     hedeflerCiz();
     esnekCiz();
     yaziOnerileriniDoldur();
     takvimCiz();
+
+    // 🎉 Günün tüm blokları bittiyse konfeti (günde bir kez)
+    if (!konfetiPatladiMi && haftaKaydirma === 0 && bugunHersheyBittiMi()) {
+        konfetiPatladiMi = true;
+        konfetiPatlat();
+        bildirimGoster("🎉 Bugünün TÜM bloklarını bitirdin! Muhteşemsin!");
+    }
 }
 
 // Şimdi çizgisi her dakika yerini güncellesin
@@ -1202,6 +1395,8 @@ setInterval(() => {
 // Başlangıç
 yukle();
 bildirimDugmesiGuncelle();
+temaUygula();
+gorunumDugmesiGuncelle();
 ciz();
 
 // Gün içinde ilk açılışsa günlük karşılamayı göster
