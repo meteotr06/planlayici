@@ -69,6 +69,219 @@ function ustBariCiz() {
     const seriEl = document.getElementById("seri");
     seriEl.textContent = seri > 0 ? "🔥 " + seri + " gün" : "";
     seriEl.style.display = seri > 0 ? "" : "none";
+
+    // ⭐ Seviye
+    const sv = seviyeBilgi();
+    document.getElementById("seviye").textContent = sv.xp > 0 ? "⭐ Sv " + sv.seviye : "";
+
+    // 🎯 En yakın hedefe büyük geri sayım
+    const yakin = enYakinHedef();
+    const sayacEl = document.getElementById("anaSayac");
+    if (yakin) {
+        sayacEl.textContent = "🎯 " + yakin.ad + ": " + (yakin.kalan === 0 ? "BUGÜN!" : yakin.kalan + " gün");
+        sayacEl.style.display = "";
+    } else {
+        sayacEl.style.display = "none";
+    }
+}
+
+// ---------- 🔢 Soru sayacı ----------
+function soruCiz() {
+    const kap = document.getElementById("soruListe");
+    kap.innerHTML = "";
+    const bugun = bugunSorular();
+    const dersler = soruDersleri();
+    let bugunToplam = 0;
+    for (const d in bugun) bugunToplam += bugun[d];
+    document.getElementById("soruOzet").textContent =
+        bugunToplam > 0 ? "bugün " + bugunToplam + " · hafta " + haftaSoruToplam() : "";
+
+    if (dersler.length === 0) {
+        kap.innerHTML = "<div class='panel-bos'>Ders ekle, çözdükçe +'lara bas. \"Bugün kaç soru çözdün?\" sorusunun cevabı hep burada olsun.</div>";
+        return;
+    }
+    for (const ders of dersler) {
+        const satir = document.createElement("div");
+        satir.className = "soru-satir";
+        const ad = document.createElement("span");
+        ad.className = "soru-ad";
+        ad.textContent = ders;
+        const sayi = document.createElement("b");
+        sayi.className = "soru-sayi";
+        sayi.textContent = bugun[ders] || 0;
+        const dugmeler = document.createElement("span");
+        dugmeler.className = "soru-dugmeler";
+        for (const adet of [1, 5, 10]) {
+            const b = document.createElement("button");
+            b.textContent = "+" + adet;
+            b.onclick = () => { soruEkle(ders, adet); ciz(); };
+            dugmeler.appendChild(b);
+        }
+        const eksi = document.createElement("button");
+        eksi.textContent = "−";
+        eksi.title = "Yanlışlıkla bastıysan azalt";
+        eksi.onclick = () => { soruEkle(ders, -1); ciz(); };
+        dugmeler.appendChild(eksi);
+        satir.append(ad, sayi, dugmeler);
+        kap.appendChild(satir);
+    }
+}
+
+document.getElementById("soruDersEkleBtn").onclick = () => {
+    const giris = document.getElementById("soruDersGiris");
+    soruDersEkle(giris.value);
+    giris.value = "";
+    ciz();
+};
+
+// ---------- 📝 Denemeler ----------
+function denemeCiz() {
+    const grafKap = document.getElementById("denemeGrafikKap");
+    const liste = document.getElementById("denemeListe");
+    grafKap.innerHTML = ""; liste.innerHTML = "";
+    const denemeler = veri.denemeler;
+    document.getElementById("denemeOzet").textContent =
+        denemeler.length ? "son net: " + denemeler[denemeler.length - 1].net : "";
+
+    if (denemeler.length === 0) {
+        liste.innerHTML = "<div class='panel-bos'>Deneme sonuçlarını gir (D/Y/B), neti ben hesaplayayım ve gelişim grafiğini çizeyim.</div>";
+    } else {
+        // Grafik: son 12 denemenin net çizgisi + hedef çizgisi
+        const son = denemeler.slice(-12);
+        const G = 250, Y = 90, kenar = 6;
+        const enYuksek = Math.max(...son.map(d => d.net), veri.hedefNet || 0, 10);
+        const x = i => son.length === 1 ? G / 2 : kenar + i * (G - 2 * kenar) / (son.length - 1);
+        const y = net => Y - kenar - Math.max(0, net) / enYuksek * (Y - 2 * kenar);
+        let svg = "<svg viewBox='0 0 " + G + " " + Y + "' class='deneme-grafik'>";
+        if (veri.hedefNet) {
+            svg += "<line x1='0' y1='" + y(veri.hedefNet) + "' x2='" + G + "' y2='" + y(veri.hedefNet) +
+                   "' class='hedef-cizgi'/><text x='2' y='" + (y(veri.hedefNet) - 3) + "' class='grafik-yazi'>hedef " + veri.hedefNet + "</text>";
+        }
+        svg += "<polyline points='" + son.map((d, i) => x(i) + "," + y(d.net)).join(" ") + "' class='net-cizgi'/>";
+        for (let i = 0; i < son.length; i++) {
+            svg += "<circle cx='" + x(i) + "' cy='" + y(son[i].net) + "' r='3' class='net-nokta'/>" +
+                   "<text x='" + x(i) + "' y='" + (y(son[i].net) - 6) + "' text-anchor='middle' class='grafik-yazi'>" + son[i].net + "</text>";
+        }
+        svg += "</svg>";
+        grafKap.innerHTML = svg;
+
+        for (const d of [...denemeler].reverse().slice(0, 5)) {
+            const satir = document.createElement("div");
+            satir.className = "deneme-satir";
+            satir.innerHTML = "<span>" + esc(d.ad) + " <small>(" + d.tur + " · " + d.tarih + ")</small></span>" +
+                              "<b>" + d.net + " net</b>";
+            const sil = document.createElement("button");
+            sil.textContent = "✕";
+            sil.onclick = () => { denemeSil(d.id); ciz(); };
+            satir.appendChild(sil);
+            liste.appendChild(satir);
+        }
+    }
+    if (veri.hedefNet) document.getElementById("dHedefNet").placeholder = "Hedef net: " + veri.hedefNet;
+}
+
+document.getElementById("denemeEkleBtn").onclick = () => {
+    const ad = document.getElementById("dAd").value;
+    const tarih = document.getElementById("dTarih").value || tarihAnahtari(new Date());
+    const dogru = document.getElementById("dDogru").value;
+    if (dogru === "") { alert("En azından doğru sayısını gir."); return; }
+    denemeEkle(ad, tarih, document.getElementById("dTur").value, dogru,
+               document.getElementById("dYanlis").value, document.getElementById("dBos").value);
+    for (const id of ["dAd", "dDogru", "dYanlis", "dBos"]) document.getElementById(id).value = "";
+    bildirimGoster("✔ Deneme kaydedildi, net hesaplandı.");
+    ciz();
+};
+
+document.getElementById("hedefNetBtn").onclick = () => {
+    hedefNetAyarla(Number(document.getElementById("dHedefNet").value));
+    document.getElementById("dHedefNet").value = "";
+    ciz();
+};
+
+// ---------- 📚 Konu takibi ----------
+const KONU_DURUM = ["⬜", "🔁", "✅"];
+
+function konuCiz() {
+    const kap = document.getElementById("konuListe");
+    kap.innerHTML = "";
+    const gruplar = {};
+    for (const k of veri.konular) (gruplar[k.ders] = gruplar[k.ders] || []).push(k);
+
+    const toplam = veri.konular.length;
+    const biten = veri.konular.filter(k => k.durum === 2).length;
+    document.getElementById("konuOzet").textContent = toplam ? biten + "/" + toplam + " bitti" : "";
+
+    for (const ders in gruplar) {
+        const grup = gruplar[ders];
+        const dersBiten = grup.filter(k => k.durum === 2).length;
+        const baslik = document.createElement("div");
+        baslik.className = "konu-ders";
+        baslik.innerHTML = "<span>" + esc(ders) + "</span><small>" +
+            Math.round(dersBiten / grup.length * 100) + "%</small>";
+        kap.appendChild(baslik);
+        for (const k of grup) {
+            const satir = document.createElement("div");
+            satir.className = "konu-satir durum-" + k.durum;
+            const durum = document.createElement("button");
+            durum.className = "konu-durum";
+            durum.textContent = KONU_DURUM[k.durum];
+            durum.onclick = () => { konuDurumIlerle(k.id); ciz(); };
+            const ad = document.createElement("span");
+            ad.textContent = k.ad;
+            const sil = document.createElement("button");
+            sil.className = "konu-sil";
+            sil.textContent = "✕";
+            sil.onclick = () => { konuSil(k.id); ciz(); };
+            satir.append(durum, ad, sil);
+            kap.appendChild(satir);
+        }
+    }
+}
+
+document.getElementById("konuEkleBtn").onclick = () => {
+    konuEkle(document.getElementById("konuDersGiris").value, document.getElementById("konuAdGiris").value);
+    document.getElementById("konuAdGiris").value = "";
+    ciz();
+};
+
+// ---------- 🏆 Gelişim: XP + ısı haritası + rekorlar ----------
+function gelisimCiz() {
+    const sv = seviyeBilgi();
+    document.getElementById("gelisimOzet").textContent = sv.xp > 0 ? sv.xp + " XP" : "";
+    document.getElementById("xpKutu").innerHTML =
+        "<div class='tamamlanma-ust'><span>⭐ Seviye " + sv.seviye + "</span><b>" + sv.xp + " / " + sv.sonrakiXp + " XP</b></div>" +
+        "<div class='ist-cubuk-kap'><div class='ist-cubuk xp' style='width:" + Math.round(sv.ilerleme * 100) + "%'></div></div>" +
+        "<div class='panel-bos'>Blok bitir +10 · odak dakikası +2 · soru +1</div>";
+
+    // Isı haritası: son 15 hafta (105 gün), YPT tarzı
+    const gunler = isiHaritasiVerisi(105);
+    const enCok = Math.max(...gunler.map(g => g.puan), 1);
+    let html = "<div class='isi-izgara'>";
+    for (const g of gunler) {
+        const seviye = g.puan === 0 ? 0 : Math.min(4, Math.ceil(g.puan / enCok * 4));
+        html += "<span class='isi-kare s" + seviye + "' title='" + g.tarih + ": " + g.puan + " puan'></span>";
+    }
+    html += "</div><div class='panel-bos'>Son 15 hafta — kare ne kadar koyu, o gün o kadar çalışmışsın</div>";
+    document.getElementById("isiHaritasi").innerHTML = html;
+
+    // Haftalık rekorlar
+    const rekor = haftalikRekorlar();
+    const kap = document.getElementById("rekorListe");
+    kap.innerHTML = "";
+    if (rekor.liste.length > 0 && rekor.liste[0].puan > 0) {
+        const baslik = document.createElement("div");
+        baslik.className = "konu-ders";
+        baslik.innerHTML = "<span>🏆 En iyi haftaların</span>" +
+            (rekor.sira ? "<small>bu hafta " + rekor.sira + ". sıradasın</small>" : "");
+        kap.appendChild(baslik);
+        rekor.liste.forEach((h, i) => {
+            const satir = document.createElement("div");
+            satir.className = "rekor-satir" + (h.hafta === rekor.buHafta ? " bu-hafta" : "");
+            satir.innerHTML = "<span>" + ["🥇", "🥈", "🥉", "4.", "5."][i] + " " + h.hafta.replace("-W", " / ") +
+                ". hafta" + (h.hafta === rekor.buHafta ? " (bu hafta)" : "") + "</span><b>" + h.puan + " puan</b>";
+            kap.appendChild(satir);
+        });
+    }
 }
 
 // ---------- Kategori filtresi (göstergeler) ----------
@@ -529,7 +742,7 @@ const odakKaplama = document.getElementById("odakKaplama");
 let odak = null; // {faz, kalan, calisiyor, sayac, tur}
 
 function odakAc(blokAdi) {
-    odak = { faz: "odak", kalan: ODAK_SN, calisiyor: false, sayac: null, tur: 1 };
+    odak = { faz: "odak", kalan: ODAK_SN, calisiyor: false, sayac: null, tur: 1, dagilma: 0 };
     document.getElementById("odakBaslik").textContent = "🎯 " + blokAdi;
     odakGoster();
     odakKaplama.classList.remove("gizli");
@@ -555,7 +768,10 @@ document.getElementById("odakBaslat").onclick = () => {
             if (odak.kalan <= 0) {
                 if (odak.faz === "odak") {
                     odakEkle(25); // tam pomodoro tamamlandı
-                    bildirimGoster("🎉 25 dk odak tamamlandı! 5 dk mola hakkın var.");
+                    const skor = Math.max(0, 100 - odak.dagilma * 10);
+                    odakSkorKaydet(skor);
+                    bildirimGoster("🎉 25 dk odak tamamlandı! Odak skorun: " + skor + "/100. Şimdi 5 dk mola.");
+                    odak.dagilma = 0;
                     odak.faz = "mola"; odak.kalan = MOLA_SN;
                 } else {
                     odak.faz = "odak"; odak.kalan = ODAK_SN; odak.tur++;
@@ -575,13 +791,22 @@ document.getElementById("odakBitir").onclick = () => {
         const gecenDk = Math.floor((ODAK_SN - odak.kalan) / 60);
         if (gecenDk >= 1) {
             odakEkle(gecenDk);
-            bildirimGoster("✔ " + gecenDk + " dk odak kaydedildi.");
+            const skor = Math.max(0, 100 - odak.dagilma * 10);
+            odakSkorKaydet(skor);
+            bildirimGoster("✔ " + gecenDk + " dk odak kaydedildi. Skor: " + skor + "/100");
         }
     }
     odak = null;
     odakKaplama.classList.add("gizli");
     ciz();
 };
+
+// Odak sırasında sekme değiştirmek / pencereden çıkmak dikkat dağınıklığı sayılır
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden && odak && odak.calisiyor && odak.faz === "odak") {
+        odak.dagilma++;
+    }
+});
 
 document.getElementById("mOdak").onclick = () => {
     const b = blokBul(bakilanAnahtar(), duzenlenenId);
@@ -689,6 +914,12 @@ function asistanCiz() {
         brifing.textContent = gunlukBrifing(anahtar, bugunGun, simdi.getHours() * 60 + simdi.getMinutes());
         kap.appendChild(brifing);
     }
+
+    // 💬 Günün sözü
+    const soz = document.createElement("div");
+    soz.className = "soz";
+    soz.textContent = "💬 " + gununSozu();
+    kap.appendChild(soz);
 
     const oneriler = oneriUret(anahtar, bugunGun).filter(o => !gizlenenOneriler.has(o.id));
     if (oneriler.length === 0) {
@@ -848,6 +1079,10 @@ function ciz() {
     filtreCiz();
     asistanCiz();
     istatistikCiz();
+    soruCiz();
+    denemeCiz();
+    konuCiz();
+    gelisimCiz();
     hedeflerCiz();
     esnekCiz();
     takvimCiz();

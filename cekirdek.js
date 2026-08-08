@@ -15,7 +15,12 @@ let veri = {
     tekrarlayan: [],
     haftalar: {},
     hedefler: [],  // sınav / teslim tarihi geri sayımları [{id, ad, tarih "2026-08-20"}]
-    gunlukIz: {}   // gün bazlı başarı izi { "2026-08-08": { tamamlanan: 3, odakDk: 50 } }
+    gunlukIz: {},  // gün bazlı başarı izi { "2026-08-08": { tamamlanan: 3, odakDk: 50, seans: 2, skorToplam: 180 } }
+    sorular: {},   // çözülen soru sayıları { "2026-08-08": { "matematik": 50 } }
+    denemeler: [], // deneme sınavları [{id, ad, tarih, tur, dogru, yanlis, bos, net}]
+    konular: [],   // konu takip listesi [{id, ders, ad, durum 0=görmedim 1=tekrar 2=bitti}]
+    hedefNet: null,// deneme grafiğindeki hedef çizgisi
+    soruDersler: []// soru sayacındaki kalıcı ders adları
 };
 
 // ---------- Kaydet / Yükle ----------
@@ -29,6 +34,11 @@ function yukle() {
     veri = JSON.parse(ham);
     veri.hedefler = veri.hedefler || [];
     veri.gunlukIz = veri.gunlukIz || {};
+    veri.sorular = veri.sorular || {};
+    veri.denemeler = veri.denemeler || [];
+    veri.konular = veri.konular || [];
+    veri.soruDersler = veri.soruDersler || [];
+    if (veri.hedefNet === undefined) veri.hedefNet = null;
     eskiVeriyiTasi();
 }
 
@@ -220,6 +230,197 @@ function seriHesapla() {
         t.setDate(t.getDate() - 1);
     }
     return seri;
+}
+
+// ---------- 🔢 Soru sayacı ----------
+// Türk öğrenci kültürü: "bugün kaç soru çözdün?" Ders başına günlük sayaç.
+function soruEkle(ders, adet) {
+    ders = ders.trim().toLocaleLowerCase("tr");
+    if (!ders) return;
+    const k = tarihAnahtari(new Date());
+    if (!veri.sorular[k]) veri.sorular[k] = {};
+    veri.sorular[k][ders] = Math.max(0, (veri.sorular[k][ders] || 0) + adet);
+    if (veri.sorular[k][ders] === 0) delete veri.sorular[k][ders];
+    kaydet();
+}
+
+function bugunSorular() {
+    return veri.sorular[tarihAnahtari(new Date())] || {};
+}
+
+function soruDersEkle(ad) {
+    ad = ad.trim().toLocaleLowerCase("tr");
+    if (ad && !veri.soruDersler.includes(ad)) {
+        veri.soruDersler.push(ad);
+        veri.soruDersler.sort();
+        kaydet();
+    }
+}
+
+// Kalıcı ders listesi + geçmişte soru çözülen dersler (butonları kalıcı yapmak için)
+function soruDersleri() {
+    const adlar = new Set(veri.soruDersler);
+    for (const gun in veri.sorular) {
+        for (const d in veri.sorular[gun]) adlar.add(d);
+    }
+    return [...adlar].sort();
+}
+
+function gunSoruToplam(tarihK) {
+    const g = veri.sorular[tarihK] || {};
+    let t = 0;
+    for (const d in g) t += g[d];
+    return t;
+}
+
+function haftaSoruToplam() {
+    const pzt = haftaBaslangici(new Date());
+    let t = 0;
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(pzt);
+        d.setDate(d.getDate() + i);
+        t += gunSoruToplam(tarihAnahtari(d));
+    }
+    return t;
+}
+
+// ---------- 📝 Deneme net takibi ----------
+// net = doğru - yanlış/4 (TYT/AYT), LGS'de yanlış/3
+function denemeEkle(ad, tarih, tur, dogru, yanlis, bos) {
+    dogru = Number(dogru) || 0; yanlis = Number(yanlis) || 0; bos = Number(bos) || 0;
+    const net = tur === "LGS" ? dogru - yanlis / 3 : dogru - yanlis / 4;
+    veri.denemeler.push({
+        id: benzersizId(), ad: (ad || "Deneme").trim(), tarih, tur,
+        dogru, yanlis, bos, net: Math.round(net * 100) / 100
+    });
+    veri.denemeler.sort((a, b) => a.tarih.localeCompare(b.tarih));
+    kaydet();
+}
+
+function denemeSil(id) {
+    veri.denemeler = veri.denemeler.filter(d => d.id !== id);
+    kaydet();
+}
+
+function hedefNetAyarla(net) {
+    veri.hedefNet = net > 0 ? net : null;
+    kaydet();
+}
+
+// ---------- 📚 Konu takip listesi ----------
+function konuEkle(ders, ad) {
+    ders = ders.trim(); ad = ad.trim();
+    if (!ders || !ad) return;
+    veri.konular.push({ id: benzersizId(), ders, ad, durum: 0 });
+    kaydet();
+}
+
+function konuDurumIlerle(id) {
+    const k = veri.konular.find(x => x.id === id);
+    if (k) { k.durum = (k.durum + 1) % 3; kaydet(); }
+}
+
+function konuSil(id) {
+    veri.konular = veri.konular.filter(k => k.id !== id);
+    kaydet();
+}
+
+// ---------- ⭐ XP / Seviye ----------
+// Her iş puan getirir: biten blok 10, odak dakikası 2, çözülen soru 1.
+function gunPuani(tarihK) {
+    const iz = veri.gunlukIz[tarihK] || {};
+    return (iz.tamamlanan || 0) * 10 + (iz.odakDk || 0) * 2 + gunSoruToplam(tarihK);
+}
+
+function seviyeBilgi() {
+    let xp = 0;
+    const gunler = new Set([...Object.keys(veri.gunlukIz), ...Object.keys(veri.sorular)]);
+    for (const g of gunler) {
+        const iz = veri.gunlukIz[g] || {};
+        xp += (iz.tamamlanan || 0) * 10 + (iz.odakDk || 0) * 2 + gunSoruToplam(g);
+    }
+    const seviye = Math.floor(Math.sqrt(xp / 100)) + 1;
+    const buSeviyeXp = (seviye - 1) * (seviye - 1) * 100;
+    const sonrakiXp = seviye * seviye * 100;
+    return { xp, seviye, ilerleme: (xp - buSeviyeXp) / (sonrakiXp - buSeviyeXp), sonrakiXp };
+}
+
+// ---------- 🔥 Isı haritası + 🏆 haftalık rekorlar ----------
+function isiHaritasiVerisi(gunSayisi) {
+    const sonuc = [];
+    const t = new Date();
+    t.setDate(t.getDate() - gunSayisi + 1);
+    for (let i = 0; i < gunSayisi; i++) {
+        const k = tarihAnahtari(t);
+        const iz = veri.gunlukIz[k] || {};
+        sonuc.push({
+            tarih: k,
+            puan: (iz.tamamlanan || 0) * 10 + (iz.odakDk || 0) * 2 + gunSoruToplam(k)
+        });
+        t.setDate(t.getDate() + 1);
+    }
+    return sonuc;
+}
+
+function haftalikRekorlar() {
+    const haftalar = {};
+    const gunler = new Set([...Object.keys(veri.gunlukIz), ...Object.keys(veri.sorular)]);
+    for (const g of gunler) {
+        const hafta = haftaAnahtari(new Date(g + "T12:00:00"));
+        const iz = veri.gunlukIz[g] || {};
+        haftalar[hafta] = (haftalar[hafta] || 0) +
+            (iz.tamamlanan || 0) * 10 + (iz.odakDk || 0) * 2 + gunSoruToplam(g);
+    }
+    const liste = Object.entries(haftalar)
+        .map(([hafta, puan]) => ({ hafta, puan }))
+        .sort((a, b) => b.puan - a.puan);
+    const buHafta = haftaAnahtari(new Date());
+    const sira = liste.findIndex(h => h.hafta === buHafta) + 1;
+    return { liste: liste.slice(0, 5), buHafta, sira: sira || null, toplamHafta: liste.length };
+}
+
+// ---------- 🎯 Odak skoru ----------
+// Odak seansında sekme değiştirmek dikkat dağınıklığı sayılır; 100'den düşer.
+function odakSkorKaydet(skor) {
+    const iz = gunIzi(new Date());
+    iz.seans = (iz.seans || 0) + 1;
+    iz.skorToplam = (iz.skorToplam || 0) + skor;
+    kaydet();
+}
+
+function bugunOdakSkoru() {
+    const iz = veri.gunlukIz[tarihAnahtari(new Date())] || {};
+    if (!iz.seans) return null;
+    return Math.round(iz.skorToplam / iz.seans);
+}
+
+// ---------- 💬 Günün sözü ----------
+const SOZLER = [
+    "Damlaya damlaya göl olur — bugünkü 1 saat, yarınki 1 sıra fark eder.",
+    "Rakibin dün çözdüğün soru sayısı, bugün onu geç.",
+    "Motivasyon başlatır, disiplin bitirir.",
+    "Zor geliyorsa doğru yoldasın demektir.",
+    "Bir saatlik odaklı çalışma, üç saatlik telefonlu çalışmadan iyidir.",
+    "Zinciri kırma! 🔥",
+    "Sınav, hazırlananlar için bir fırsattır.",
+    "Küçük adımlar, büyük netler getirir.",
+    "Bugün yapamadıysan bile yarın yeni bir sayfadır.",
+    "En iyi program, uyguladığın programdır."
+];
+
+function gununSozu() {
+    const t = new Date();
+    const yilinGunu = Math.floor((t - new Date(t.getFullYear(), 0, 0)) / 86400000);
+    return SOZLER[yilinGunu % SOZLER.length];
+}
+
+// En yakın gelecekteki hedef (üstteki büyük geri sayım için)
+function enYakinHedef() {
+    for (const h of veri.hedefler) {
+        const kalan = hedefKalanGun(h.tarih);
+        if (kalan >= 0) return { ad: h.ad, kalan };
+    }
+    return null;
 }
 
 // ---------- Takvim dosyası (.ics) dışa aktarma ----------
