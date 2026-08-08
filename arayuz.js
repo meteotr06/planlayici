@@ -541,6 +541,95 @@ document.getElementById("yedekYukleGiris").onchange = (e) => {
     okuyucu.readAsText(dosya);
 };
 
+// ---------- 🤖 Asistan ----------
+const gizlenenOneriler = new Set(); // bu oturumda "✕" denilen öneriler
+
+function asistanCiz() {
+    const anahtar = bakilanAnahtar();
+    const bugunGun = haftaKaydirma === 0 ? (new Date().getDay() + 6) % 7 : 0;
+    const kap = document.getElementById("asistanListe");
+    kap.innerHTML = "";
+
+    const oneriler = oneriUret(anahtar, bugunGun).filter(o => !gizlenenOneriler.has(o.id));
+    if (oneriler.length === 0) {
+        kap.innerHTML = "<div class='panel-bos'>Şu an önerim yok — program iyi görünüyor 👍</div>";
+        return;
+    }
+    for (const o of oneriler) {
+        const kart = document.createElement("div");
+        kart.className = "oneri";
+        kart.innerHTML = "<div class='oneri-baslik'>" + esc(o.baslik) + "</div>" +
+                         "<div class='oneri-aciklama'>" + esc(o.aciklama) + "</div>";
+        const satir = document.createElement("div");
+        satir.className = "oneri-dugmeler";
+        const uygula = document.createElement("button");
+        uygula.className = "birincil";
+        uygula.textContent = "Uygula";
+        uygula.onclick = () => {
+            for (const b of o.bloklar) blokEkle(anahtar, b, o.herHafta);
+            gizlenenOneriler.add(o.id);
+            bildirimGoster("✔ " + o.bloklar.length + " blok eklendi");
+            ciz();
+        };
+        const gec = document.createElement("button");
+        gec.className = "ikincil";
+        gec.textContent = "Geç";
+        gec.onclick = () => { gizlenenOneriler.add(o.id); asistanCiz(); };
+        satir.append(uygula, gec);
+        kart.appendChild(satir);
+        kap.appendChild(kart);
+    }
+}
+
+// ---------- 🪄 Sihirbaz ----------
+const sihirbazKaplama = document.getElementById("sihirbazKaplama");
+
+// Spor günü seçim çipleri
+(() => {
+    const kap = document.getElementById("sSporGunleri");
+    GUN_KISA.forEach((ad, i) => {
+        const cip = document.createElement("button");
+        cip.type = "button";
+        cip.className = "gun-cip" + (i === 5 ? " secili" : ""); // varsayılan Cumartesi
+        cip.textContent = ad;
+        cip.dataset.gun = i;
+        cip.onclick = () => cip.classList.toggle("secili");
+        kap.appendChild(cip);
+    });
+})();
+
+document.getElementById("sihirbazBtn").onclick = () => sihirbazKaplama.classList.remove("gizli");
+document.getElementById("sIptal").onclick = () => sihirbazKaplama.classList.add("gizli");
+sihirbazKaplama.onclick = (e) => { if (e.target === sihirbazKaplama) sihirbazKaplama.classList.add("gizli"); };
+
+document.getElementById("sOkulVar").onchange = (e) => {
+    document.getElementById("sOkulSaatleri").style.display = e.target.checked ? "" : "none";
+};
+
+document.getElementById("sOlustur").onclick = () => {
+    if (veri.tekrarlayan.length > 0 &&
+        !confirm("Zaten 🔁 tekrarlayan bir programın var. Silinip yerine yenisi kurulsun mu?")) {
+        return;
+    }
+    tekrarlayanTemizle();
+    const cevaplar = {
+        uyan: document.getElementById("sUyan").value,
+        yat: document.getElementById("sYat").value,
+        okulVar: document.getElementById("sOkulVar").checked,
+        okulBas: document.getElementById("sOkulBas").value,
+        okulBit: document.getElementById("sOkulBit").value,
+        zayifDersler: document.getElementById("sDersler").value
+            .split(",").map(s => s.trim()).filter(Boolean),
+        gunlukCalisma: Number(document.getElementById("sCalisma").value),
+        sporGunleri: [...document.querySelectorAll("#sSporGunleri .gun-cip.secili")]
+            .map(c => Number(c.dataset.gun))
+    };
+    sihirbazPlanUret(cevaplar);
+    sihirbazKaplama.classList.add("gizli");
+    bildirimGoster("🪄 Haftalık programın kuruldu! Blokları sürükleyerek istediğin gibi ayarla.");
+    ciz();
+};
+
 // ---------- Hızlı ekleme çubuğu ----------
 function bildirimGoster(mesaj) {
     let kutu = document.getElementById("bildirim");
@@ -596,6 +685,7 @@ document.getElementById("ornekBtn").onclick = () => {
 function ciz() {
     ustBariCiz();
     filtreCiz();
+    asistanCiz();
     istatistikCiz();
     hedeflerCiz();
     esnekCiz();

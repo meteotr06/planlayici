@@ -376,6 +376,168 @@ function hizliAyristir(metin, varsayilanGun) {
     return { gun, bas: cevir(basDak), bit: cevir(bitDak), metin: baslik, kategori, herHafta };
 }
 
+// ================= AKILLI ASİSTAN =================
+// Kural tabanlı "yapay zeka": programı inceler, boşlukları bulur,
+// sınavlara göre çalışma önerir, eksikleri (uyku/spor) yakalar.
+
+function saatYaz(dk) {
+    dk = Math.max(0, Math.min(1439, Math.round(dk)));
+    return String(Math.floor(dk / 60)).padStart(2, "0") + ":" + String(dk % 60).padStart(2, "0");
+}
+
+// Bir günün boş zaman aralıklarını bulur (dakika cinsinden {bas, bit} listesi).
+function bosAraliklar(anahtar, gun, enAzDk, sinirBas, sinirBit) {
+    const dolu = gunBloklari(anahtar, gun)
+        .filter(b => b.bas && b.bit)
+        .map(b => [dakika(b.bas), dakika(b.bit)])
+        .sort((a, b) => a[0] - b[0]);
+    const bos = [];
+    let imlec = sinirBas;
+    for (const [s, e] of dolu) {
+        if (s > imlec) bos.push({ bas: imlec, bit: Math.min(s, sinirBit) });
+        imlec = Math.max(imlec, e);
+        if (imlec >= sinirBit) break;
+    }
+    if (imlec < sinirBit) bos.push({ bas: imlec, bit: sinirBit });
+    return bos.filter(a => a.bit - a.bas >= enAzDk);
+}
+
+// Haftada belirli bir kategoriden blok var mı?
+function kategoriVarMi(anahtar, kategori) {
+    for (let gun = -1; gun < 7; gun++) {
+        if (gunBloklari(anahtar, gun).some(b => b.kategori === kategori)) return true;
+    }
+    return false;
+}
+
+// Asistanın önerileri: [{id, baslik, aciklama, bloklar, herHafta}]
+function oneriUret(anahtar, bugunGun) {
+    const oneriler = [];
+
+    // 1) Yaklaşan sınavlar/hedefler için çalışma blokları
+    for (const h of veri.hedefler) {
+        const kalan = hedefKalanGun(h.tarih);
+        if (kalan < 0 || kalan > 14) continue;
+        const anahtarKelime = h.ad.toLocaleLowerCase("tr").split(/\s+/)[0];
+        let mevcutCalisma = 0;
+        for (let g = 0; g < 7; g++) {
+            for (const b of gunBloklari(anahtar, g)) {
+                if ((b.kategori === "etut" || b.kategori === "ders") &&
+                    b.metin.toLocaleLowerCase("tr").includes(anahtarKelime)) mevcutCalisma++;
+            }
+        }
+        if (mevcutCalisma >= 2) continue; // zaten çalışması planlanmış
+        const bloklar = [];
+        for (let g = bugunGun; g < 7 && bloklar.length < 2; g++) {
+            const araliklar = bosAraliklar(anahtar, g, 90, 17 * 60, 22 * 60 + 30);
+            if (araliklar.length) {
+                const a = araliklar[0];
+                bloklar.push({ gun: g, bas: saatYaz(a.bas), bit: saatYaz(Math.min(a.bas + 90, a.bit)),
+                               metin: h.ad + " çalışması", kategori: "etut" });
+            }
+        }
+        if (bloklar.length) {
+            oneriler.push({
+                id: "hedef-" + h.id,
+                baslik: "🎯 \"" + h.ad + "\" yaklaşıyor (" + (kalan === 0 ? "BUGÜN" : kalan + " gün") + ")",
+                aciklama: "Programında buna çalışma görünmüyor. Boş akşamlarına " + bloklar.length + " çalışma bloğu ekleyeyim mi?",
+                bloklar, herHafta: false
+            });
+        }
+    }
+
+    // 2) Uyku düzeni yoksa öner
+    if (!kategoriVarMi(anahtar, "uyku")) {
+        const bloklar = [];
+        for (let g = 0; g < 7; g++) bloklar.push({ gun: g, bas: "23:00", bit: "23:59", metin: "Uyku", kategori: "uyku" });
+        oneriler.push({
+            id: "uyku",
+            baslik: "😴 Uyku düzenin yok",
+            aciklama: "Düzenli uyku, dersten daha önemli! Her gece 23:00 uyku bloğu ekleyeyim mi? (🔁 her hafta)",
+            bloklar, herHafta: true
+        });
+    }
+
+    // 3) Spor yoksa öner
+    if (!kategoriVarMi(anahtar, "spor")) {
+        const bloklar = [];
+        const carAralik = bosAraliklar(anahtar, 2, 75, 16 * 60, 19 * 60);
+        if (carAralik.length) bloklar.push({ gun: 2, bas: saatYaz(carAralik[0].bas),
+            bit: saatYaz(carAralik[0].bas + 75), metin: "Spor / hareket", kategori: "spor" });
+        const cmtAralik = bosAraliklar(anahtar, 5, 90, 9 * 60, 13 * 60);
+        if (cmtAralik.length) bloklar.push({ gun: 5, bas: saatYaz(cmtAralik[0].bas),
+            bit: saatYaz(cmtAralik[0].bas + 90), metin: "Spor / hareket", kategori: "spor" });
+        if (bloklar.length) {
+            oneriler.push({
+                id: "spor",
+                baslik: "🏃 Bu hafta hiç spor yok",
+                aciklama: "Hareket etmek kafayı da açar. Boş saatlerine spor ekleyeyim mi? (🔁 her hafta)",
+                bloklar, herHafta: true
+            });
+        }
+    }
+
+    // 4) Hafta içi büyük boşluk varsa değerlendir
+    for (let g = Math.max(bugunGun, 0); g < 5; g++) {
+        const araliklar = bosAraliklar(anahtar, g, 120, 16 * 60, 22 * 60);
+        if (araliklar.length) {
+            const a = araliklar[0];
+            oneriler.push({
+                id: "bosluk-" + g + "-" + a.bas,
+                baslik: "🕓 " + ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma"][g] + " akşamı boş",
+                aciklama: saatYaz(a.bas) + "–" + saatYaz(a.bit) + " arası boş görünüyor. 1 saatlik ders tekrarı koyayım mı?",
+                bloklar: [{ gun: g, bas: saatYaz(a.bas), bit: saatYaz(a.bas + 60), metin: "Ders tekrarı", kategori: "etut" }],
+                herHafta: false
+            });
+            break; // tek boşluk önerisi yeter
+        }
+    }
+
+    return oneriler.slice(0, 4);
+}
+
+// Sihirbaz: cevaplara göre komple haftalık program kurar (hepsi 🔁 tekrarlayan).
+// cevaplar: {uyan, yat, okulVar, okulBas, okulBit, zayifDersler[], gunlukCalisma, sporGunleri[]}
+function sihirbazPlanUret(c) {
+    const ekle = (gun, basDk, bitDk, metin, kategori) => {
+        if (bitDk <= basDk) return;
+        veri.tekrarlayan.push({ id: benzersizId(), gun,
+            bas: saatYaz(basDk), bit: saatYaz(bitDk), metin, kategori });
+    };
+    const uyan = dakika(c.uyan) ?? 7 * 60;
+    const yat = dakika(c.yat) ?? 23 * 60;
+    const dersler = c.zayifDersler.length ? c.zayifDersler : ["Ders"];
+    let dersSira = 0;
+    const dersAdi = () => {
+        const ad = dersler[dersSira++ % dersler.length];
+        return ad.charAt(0).toLocaleUpperCase("tr") + ad.slice(1) + " çalışması";
+    };
+
+    for (let g = 0; g < 5; g++) { // hafta içi
+        ekle(g, uyan, uyan + 40, "Kahvaltı + hazırlık", "yemek");
+        if (c.okulVar) ekle(g, dakika(c.okulBas) ?? 510, dakika(c.okulBit) ?? 930, "Okul", "ders");
+        if (c.sporGunleri.includes(g)) ekle(g, 16 * 60 + 45, 18 * 60, "Spor", "spor");
+        ekle(g, 18 * 60 + 10, 19 * 60, "Akşam yemeği", "yemek");
+        const sure = Math.round((c.gunlukCalisma || 2) * 60);
+        ekle(g, 19 * 60 + 15, Math.min(19 * 60 + 15 + sure, yat - 10), dersAdi(), "etut");
+    }
+    // hafta sonu
+    for (const g of [5, 6]) {
+        if (c.sporGunleri.includes(g)) ekle(g, 10 * 60, 11 * 60 + 30, "Spor", "spor");
+    }
+    ekle(5, 13 * 60, 15 * 60, "Haftalık genel tekrar", "etut");
+    ekle(6, 11 * 60, 12 * 60 + 30, "Gelecek haftaya hazırlık", "etut");
+    ekle(6, 15 * 60, 18 * 60, "Serbest zaman", "serbest");
+    // uyku her gün
+    for (let g = 0; g < 7; g++) ekle(g, yat, 23 * 60 + 59, "Uyku", "uyku");
+    kaydet();
+}
+
+function tekrarlayanTemizle() {
+    veri.tekrarlayan = [];
+    kaydet();
+}
+
 // Hiç kayıt var mı? (örnek program önerisi için)
 function tamamenBosMu() {
     if (veri.tekrarlayan.length > 0) return false;

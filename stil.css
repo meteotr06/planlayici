@@ -285,6 +285,41 @@ header h1 span { color: var(--vurgu); }
 
 .panel-bos { color: var(--soluk); font-size: 0.78rem; line-height: 1.4; }
 
+/* 🤖 Asistan */
+.panel.asistan { border-color: #3a4370; background: linear-gradient(160deg, #1d2340, #1a1f33); }
+
+.oneri {
+    background: var(--kart-acik);
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.oneri-baslik { font-size: 0.82rem; font-weight: 700; }
+.oneri-aciklama { font-size: 0.76rem; color: var(--soluk); line-height: 1.4; }
+.oneri-dugmeler { display: flex; gap: 6px; }
+.oneri-dugmeler .birincil { padding: 4px 12px; font-size: 0.78rem; }
+.oneri-dugmeler .ikincil { padding: 4px 12px; font-size: 0.78rem; }
+
+.pencere-not { color: var(--soluk); font-size: 0.8rem; line-height: 1.4; }
+
+.gun-secim { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.gun-cip {
+    background: var(--arka);
+    border: 1px solid #2e3654;
+    color: var(--soluk);
+    border-radius: 8px;
+    padding: 5px 9px;
+    font-size: 0.78rem;
+}
+.gun-cip.secili {
+    background: rgba(108, 140, 255, 0.2);
+    border-color: var(--vurgu);
+    color: var(--yazi);
+    font-weight: 700;
+}
+
 /* İstatistik */
 .ist-satir {
     display: grid;

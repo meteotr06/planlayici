@@ -48,6 +48,12 @@
 
         <!-- Yan panel -->
         <aside class="yan-panel">
+            <section class="panel asistan">
+                <h3>🤖 Asistan</h3>
+                <div id="asistanListe"></div>
+                <button id="sihirbazBtn" class="birincil">🪄 Bana program hazırla</button>
+            </section>
+
             <section class="panel">
                 <h3>📊 Bu Hafta</h3>
                 <div id="istatistikKutu"></div>
@@ -135,6 +141,50 @@
                 <span class="bosluk"></span>
                 <button id="mIptal" class="ikincil">Vazgeç</button>
                 <button id="mKaydet" class="birincil">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sihirbaz penceresi: birkaç soruyla komple program kurar -->
+    <div id="sihirbazKaplama" class="kaplama gizli">
+        <div class="pencere">
+            <h3>🪄 Program Sihirbazı</h3>
+            <p class="pencere-not">Birkaç soruya cevap ver, sana dengeli bir haftalık program kurayım. Sonra her şeyi elle değiştirebilirsin.</p>
+            <div class="satir">
+                <label class="alan">Kaçta uyanıyorsun?
+                    <input id="sUyan" type="time" value="07:00" />
+                </label>
+                <label class="alan">Kaçta yatıyorsun?
+                    <input id="sYat" type="time" value="23:00" />
+                </label>
+            </div>
+            <label class="tekrar-kutu"><input id="sOkulVar" type="checkbox" checked />🏫 Hafta içi okula gidiyorum</label>
+            <div class="satir" id="sOkulSaatleri">
+                <label class="alan">Okul başlangıç
+                    <input id="sOkulBas" type="time" value="08:30" />
+                </label>
+                <label class="alan">Okul bitiş
+                    <input id="sOkulBit" type="time" value="15:30" />
+                </label>
+            </div>
+            <label class="alan">Hangi derslere ağırlık vereceksin? (virgülle ayır)
+                <input id="sDersler" type="text" placeholder="ör. matematik, fizik, ingilizce" />
+            </label>
+            <label class="alan">Okul sonrası günde kaç saat çalışacaksın?
+                <select id="sCalisma">
+                    <option value="1">1 saat</option>
+                    <option value="1.5">1,5 saat</option>
+                    <option value="2" selected>2 saat</option>
+                    <option value="3">3 saat</option>
+                </select>
+            </label>
+            <label class="alan">Spor günlerin
+                <div class="gun-secim" id="sSporGunleri"></div>
+            </label>
+            <div class="dugmeler">
+                <span class="bosluk"></span>
+                <button id="sIptal" class="ikincil">Vazgeç</button>
+                <button id="sOlustur" class="birincil">Programı Kur</button>
             </div>
         </div>
     </div>
