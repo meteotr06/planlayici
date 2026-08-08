@@ -6,9 +6,9 @@ const SURUM = "planlayici-v10";
 const DOSYALAR = [
     "./",
     "./index.html",
-    "./stil.css",
-    "./cekirdek.js",
-    "./arayuz.js",
+    "./stil.css?v=10",
+    "./cekirdek.js?v=10",
+    "./arayuz.js?v=10",
     "./manifest.json",
     "./ikon-192.png",
     "./ikon-512.png",
