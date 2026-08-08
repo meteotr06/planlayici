@@ -37,8 +37,9 @@
     <!-- Hızlı ekleme: tek satır yaz, gerisini uygulama anlasın -->
     <div class="hizli-serit">
         <span class="hizli-simge">⚡</span>
-        <input id="hizliGiris" type="text"
+        <input id="hizliGiris" type="text" list="hizliOneriler"
                placeholder="Hızlı ekle — yaz ve Enter'a bas: &quot;salı 16-17 matematik&quot; · &quot;her cuma 19 spor&quot; · &quot;yarın 20 ödev&quot;" />
+        <datalist id="hizliOneriler"></datalist>
         <button id="hizliEkleBtn" class="birincil">Ekle</button>
     </div>
 
@@ -56,6 +57,11 @@
             <section class="panel asistan">
                 <h3>🤖 Asistan</h3>
                 <div id="asistanListe"></div>
+                <div id="sohbetKutu" class="sohbet-kutu"></div>
+                <div class="ekle-mini">
+                    <input id="sohbetGiris" type="text" placeholder="Asistana sor: bugün ne var? · yarın 16 matematik ekle" />
+                    <button id="sohbetGonder" class="birincil">➤</button>
+                </div>
                 <button id="sihirbazBtn" class="birincil">🪄 Bana program hazırla</button>
             </section>
 
@@ -269,6 +275,7 @@
             <label class="alan">Bugün neler yapman gerekiyor? (her satıra bir iş — istersen saat de yaz)
                 <textarea id="checkinGorevler" rows="5" placeholder="matematik 40 soru&#10;16-17 fizik konu tekrarı&#10;ingilizce kelime ezberle&#10;odayı topla"></textarea>
             </label>
+            <div id="ckCipler" class="cip-onerileri"></div>
             <div class="panel-bos">Saat yazarsan o saate koyarım; yazmazsan bugünün boş saatlerine ben yerleştiririm. Enerjine göre blok süresini ayarlarım (😴 45 dk · 🙂 60 dk · 🔥 90 dk).</div>
             <div class="dugmeler">
                 <span class="bosluk"></span>

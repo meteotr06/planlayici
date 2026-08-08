@@ -1003,6 +1003,59 @@ function asistanCiz() {
     }
 }
 
+// ---------- 💬 Sohbet asistanı ----------
+function sohbetMesajCiz(metin, kimden) {
+    const kutu = document.getElementById("sohbetKutu");
+    const balon = document.createElement("div");
+    balon.className = "sohbet-balon " + kimden;
+    balon.textContent = metin;
+    kutu.appendChild(balon);
+    kutu.scrollTop = kutu.scrollHeight;
+}
+
+function sohbetGonder() {
+    const giris = document.getElementById("sohbetGiris");
+    const mesaj = giris.value.trim();
+    if (!mesaj) return;
+    giris.value = "";
+    sohbetMesajCiz(mesaj, "ben");
+    const cevap = sohbetCevabi(mesaj);
+    sohbetMesajCiz(cevap, "bot");
+    ciz(); // asistan bir şey eklediyse takvim güncellensin (sohbet kutusu ayrı, silinmez)
+}
+
+document.getElementById("sohbetGonder").onclick = sohbetGonder;
+document.getElementById("sohbetGiris").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sohbetGonder();
+});
+
+// ---------- ✍️ Yazım önerileri ----------
+function yaziOnerileriniDoldur() {
+    // Hızlı ekleme çubuğunun açılır önerileri
+    const datalist = document.getElementById("hizliOneriler");
+    datalist.innerHTML = "";
+    for (const oneri of yaziOnerileri()) {
+        const secenek = document.createElement("option");
+        secenek.value = oneri;
+        datalist.appendChild(secenek);
+    }
+    // Günlük karşılamadaki tık-ekle çipleri
+    const cipKap = document.getElementById("ckCipler");
+    cipKap.innerHTML = "";
+    for (const oneri of yaziOnerileri().slice(0, 8)) {
+        const cip = document.createElement("button");
+        cip.type = "button";
+        cip.className = "yazi-cip";
+        cip.textContent = "+ " + oneri;
+        cip.onclick = () => {
+            const kutu = document.getElementById("checkinGorevler");
+            kutu.value = (kutu.value ? kutu.value.replace(/\n?$/, "\n") : "") + oneri;
+            kutu.focus();
+        };
+        cipKap.appendChild(cip);
+    }
+}
+
 // ---------- 🪄 Sihirbaz ----------
 const sihirbazKaplama = document.getElementById("sihirbazKaplama");
 
@@ -1132,6 +1185,7 @@ function ciz() {
     gelisimCiz();
     hedeflerCiz();
     esnekCiz();
+    yaziOnerileriniDoldur();
     takvimCiz();
 }
 

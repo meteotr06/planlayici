@@ -342,6 +342,48 @@ header h1 span { color: var(--vurgu); }
     font-weight: 700;
 }
 
+/* 💬 Sohbet */
+.sohbet-kutu {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+.sohbet-kutu:empty { display: none; }
+.sohbet-balon {
+    border-radius: 12px;
+    padding: 7px 10px;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    max-width: 90%;
+    white-space: pre-line;
+    word-break: break-word;
+}
+.sohbet-balon.ben {
+    align-self: flex-end;
+    background: var(--vurgu);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+.sohbet-balon.bot {
+    align-self: flex-start;
+    background: var(--kart-acik);
+    border-bottom-left-radius: 4px;
+}
+
+/* ✍️ Yazım önerisi çipleri */
+.cip-onerileri { display: flex; flex-wrap: wrap; gap: 5px; }
+.yazi-cip {
+    background: var(--arka);
+    border: 1px dashed #3a4370;
+    color: var(--soluk);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.74rem;
+}
+.yazi-cip:hover { color: var(--yazi); border-color: var(--vurgu); }
+
 /* İstatistik */
 .ist-satir {
     display: grid;

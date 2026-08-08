@@ -478,6 +478,125 @@ function gunlukPlanla(satirlar, enerji, bugunGun, simdiDak) {
     return { dogrudan, yerlesen, listeye };
 }
 
+// ---------- ✍️ Yazım yardımcısı ----------
+// Hazır güzel cümleler + kullanıcının en sık kullandığı başlıklar
+const HAZIR_CUMLELER = [
+    "Matematik soru çözümü", "Fizik konu tekrarı", "İngilizce kelime ezberi",
+    "Deneme yanlış analizi", "Kitap okuma", "Ders notlarını düzenleme",
+    "Yürüyüş / spor", "Yarının çantasını hazırlama"
+];
+
+function gecmisBasliklar() {
+    const sayim = {};
+    const say = (metin) => { const k = metin.trim(); if (k) sayim[k] = (sayim[k] || 0) + 1; };
+    veri.tekrarlayan.forEach(b => say(b.metin));
+    for (const h in veri.haftalar) veri.haftalar[h].bloklar.forEach(b => say(b.metin));
+    return Object.entries(sayim).sort((a, b) => b[1] - a[1]).map(e => e[0]);
+}
+
+function yaziOnerileri() {
+    const oneriler = [...new Set([...gecmisBasliklar().slice(0, 6), ...HAZIR_CUMLELER])];
+    return oneriler.slice(0, 10);
+}
+
+// ---------- 💬 Sohbet asistanı ----------
+// Yazdığını anlar: plan sorar, istatistik verir, "yarın 16 matematik ekle" derse ekler.
+function sohbetCevabi(mesaj) {
+    const m = mesaj.toLocaleLowerCase("tr").trim();
+    if (!m) return null;
+    const simdi = new Date();
+    const bugunGun = (simdi.getDay() + 6) % 7;
+    const anahtar = haftaAnahtari(simdi);
+    const GUNLER = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+
+    const gunListesi = (anahtarX, gunX, baslik) => {
+        const liste = gunBloklari(anahtarX, gunX).filter(b => b.bas);
+        if (!liste.length) return baslik + " planın boş. ☀️ düğmesiyle ya da ⚡ çubukla doldurabilirsin.";
+        return baslik + " planın:\n" + liste.map(b =>
+            (b.tamam ? "✅ " : "⬜ ") + b.bas + "–" + b.bit + " " + b.metin).join("\n");
+    };
+
+    // Ekleme niyeti
+    if (/(ekle|koyar mısın|koy|planla|yaz)\b/.test(m)) {
+        const temiz = mesaj.replace(/\b(ekleyebilir misin|ekler misin|ekle|koyar mısın|koy|planla|yazar mısın|yaz|bana|lütfen|lutfen|takvime|programa)\b/gi, " ").trim();
+        const sonuc = hizliAyristir(temiz, bugunGun);
+        if (sonuc && sonuc.metin) {
+            blokEkle(anahtar, sonuc, sonuc.herHafta);
+            if (sonuc.bas) {
+                return "Ekledim ✔ " + GUNLER[sonuc.gun] + " " + sonuc.bas + "–" + sonuc.bit + ": " +
+                       sonuc.metin + (sonuc.herHafta ? " (her hafta 🔁)" : "");
+            }
+            return "Saat söylemedin, \"" + sonuc.metin + "\" işini 🕓 Boş Vakitte listesine koydum. Boş bir saatine yerleştirmemi istersen \"önerin var mı\" diye sor.";
+        }
+        return "Anlayamadım 🤔 Şöyle dene: \"yarın 16-17 matematik ekle\" ya da \"her cuma 19 spor ekle\"";
+    }
+
+    if (/(yarın|yarin)/.test(m)) {
+        const yarin = new Date(simdi);
+        yarin.setDate(yarin.getDate() + 1);
+        return gunListesi(haftaAnahtari(yarin), (yarin.getDay() + 6) % 7, "Yarınki");
+    }
+    if (/(bugün|bugun|ne yap)/.test(m) && /(ne|var|plan|yap)/.test(m)) {
+        return gunListesi(anahtar, bugunGun, "Bugünkü");
+    }
+    if (/(kaç saat|kac saat|ne kadar çalış|ne kadar calis|istatistik)/.test(m)) {
+        const o = haftaOzeti(anahtar);
+        const saat = Math.floor(o.dakikaToplam / 60);
+        return "Bu hafta " + o.toplam + " blok planladın (" + saat + " saat), " + o.biten +
+               " tanesini bitirdin." + (o.toplam ? " Tamamlama: %" + Math.round(o.biten / o.toplam * 100) : "");
+    }
+    if (/(sınav|sinav|kaç gün|kac gun|hedef)/.test(m)) {
+        const yakin = enYakinHedef();
+        if (!yakin) return "Kayıtlı bir sınav hedefin yok. 🎯 Hedefler panelinden ekleyebilirsin.";
+        return "🎯 " + yakin.ad + " için " + (yakin.kalan === 0 ? "BUGÜN! Başarılar! 🍀" :
+               yakin.kalan + " gün kaldı. Az kaldıysa panik yok — plan var 😉");
+    }
+    if (/(net|deneme)/.test(m)) {
+        if (!veri.denemeler.length) return "Henüz deneme girmemişsin. 📝 Denemeler panelinden D/Y/B gir, netini hesaplayayım.";
+        const son = veri.denemeler[veri.denemeler.length - 1];
+        let cevap = "Son denemen: " + son.ad + " → " + son.net + " net.";
+        if (veri.denemeler.length >= 2) {
+            const onceki = veri.denemeler[veri.denemeler.length - 2];
+            const fark = Math.round((son.net - onceki.net) * 100) / 100;
+            cevap += fark > 0 ? " Öncekinden " + fark + " net yükselmişsin, bravo! 📈"
+                   : fark < 0 ? " Öncekinden " + (-fark) + " net düşmüş — yanlış analizi yapmayı unutma."
+                   : " Öncekiyle aynı.";
+        }
+        if (veri.hedefNet) cevap += " Hedefin: " + veri.hedefNet + " net.";
+        return cevap;
+    }
+    if (/soru/.test(m)) {
+        const bugun = bugunSorular();
+        let toplam = 0;
+        const parcalar = [];
+        for (const d in bugun) { toplam += bugun[d]; parcalar.push(bugun[d] + " " + d); }
+        if (!toplam) return "Bugün henüz soru saymadın. 🔢 Soru Sayacı panelinden çözdükçe ekle!";
+        return "Bugün " + toplam + " soru çözdün (" + parcalar.join(", ") + "). Devam! 💪";
+    }
+    if (/(seri|zincir|streak)/.test(m)) {
+        const seri = seriHesapla();
+        return seri > 0 ? "🔥 " + seri + " gündür zincir kırılmadı. Bugün de bir blok bitir, devam etsin!"
+                        : "Zincir şu an sıfır. Bugün tek bir blok bitir, 🔥 seri başlasın!";
+    }
+    if (/(öneri|oneri|tavsiye|ne yapayım|ne yapayim|yardım|yardim)/.test(m)) {
+        const oneriler = oneriUret(anahtar, bugunGun);
+        if (!oneriler.length) return "Şu an önerim yok, programın gayet iyi görünüyor 👍";
+        const o = oneriler[0];
+        return "Önerim: " + o.baslik + " — " + o.aciklama + " (Uygulamak için yandaki karttan \"Uygula\"ya bas.)";
+    }
+    if (/(motivasyon|söz|soz)/.test(m)) {
+        return "💬 " + gununSozu();
+    }
+    if (/(merhaba|selam|naber|nasılsın|nasilsin|günaydın|gunaydin)/.test(m)) {
+        return "Selam! 👋 " + gunlukBrifing(anahtar, bugunGun, simdi.getHours() * 60 + simdi.getMinutes());
+    }
+    return "Bunu henüz öğrenmedim 🙈 Şunları sorabilirsin:\n" +
+           "• \"bugün ne var?\" / \"yarın ne var?\"\n" +
+           "• \"yarın 16-17 matematik ekle\"\n" +
+           "• \"kaç saat çalıştım?\" · \"sınava kaç gün kaldı?\"\n" +
+           "• \"son netim ne?\" · \"kaç soru çözdüm?\" · \"önerin var mı?\"";
+}
+
 // En yakın gelecekteki hedef (üstteki büyük geri sayım için)
 function enYakinHedef() {
     for (const h of veri.hedefler) {
