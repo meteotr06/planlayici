@@ -734,6 +734,53 @@ document.getElementById("mSil").onclick = () => {
     ciz();
 };
 
+// ---------- ☀️ Günlük karşılama ----------
+const checkinKaplama = document.getElementById("checkinKaplama");
+
+function checkinAc() {
+    const saat = new Date().getHours();
+    document.getElementById("checkinBaslik").textContent =
+        saat < 12 ? "☀️ Günaydın!" : saat < 18 ? "👋 İyi günler!" : "🌙 İyi akşamlar!";
+    const bugunGun = (new Date().getDay() + 6) % 7;
+    const simdi = new Date();
+    document.getElementById("checkinDurum").textContent =
+        gunlukBrifing(haftaAnahtari(simdi), bugunGun, simdi.getHours() * 60 + simdi.getMinutes());
+    checkinKaplama.classList.remove("gizli");
+    document.getElementById("checkinGorevler").focus();
+}
+
+for (const cip of document.querySelectorAll(".enerji")) {
+    cip.onclick = () => {
+        document.querySelectorAll(".enerji").forEach(c => c.classList.remove("secili"));
+        cip.classList.add("secili");
+    };
+}
+
+document.getElementById("checkinBtn").onclick = checkinAc;
+document.getElementById("checkinGec").onclick = () => {
+    checkinKaydet();
+    checkinKaplama.classList.add("gizli");
+};
+checkinKaplama.onclick = (e) => { if (e.target === checkinKaplama) checkinKaplama.classList.add("gizli"); };
+
+document.getElementById("checkinPlanla").onclick = () => {
+    const satirlar = document.getElementById("checkinGorevler").value
+        .split("\n").map(s => s.trim()).filter(Boolean);
+    const enerji = document.querySelector(".enerji.secili")?.dataset.enerji || "normal";
+    const simdi = new Date();
+    const sonuc = gunlukPlanla(satirlar, enerji, (simdi.getDay() + 6) % 7,
+                               simdi.getHours() * 60 + simdi.getMinutes());
+    document.getElementById("checkinGorevler").value = "";
+    checkinKaplama.classList.add("gizli");
+    const parcalar = [];
+    if (sonuc.dogrudan) parcalar.push(sonuc.dogrudan + " blok yazdığın saate");
+    if (sonuc.yerlesen) parcalar.push(sonuc.yerlesen + " iş boş saatlerine");
+    if (sonuc.listeye) parcalar.push(sonuc.listeye + " iş Boş Vakitte listesine");
+    bildirimGoster(parcalar.length ? "🪄 Hazır: " + parcalar.join(", ") + " kondu."
+                                   : "Bugün için bir şey eklemedin, iyi dinlenmeler 🙂");
+    ciz();
+};
+
 // ---------- 🎯 Odak modu (Pomodoro) ----------
 // 25 dk odak + 5 dk mola döngüsü. Biten her odak turu güne "odak dakikası" yazar,
 // bu da 🔥 seriyi besler (Forest/TickTick'teki gibi).
@@ -1101,3 +1148,8 @@ setInterval(() => {
 yukle();
 bildirimDugmesiGuncelle();
 ciz();
+
+// Gün içinde ilk açılışsa günlük karşılamayı göster
+if (!checkinYapildiMi()) {
+    setTimeout(checkinAc, 600);
+}

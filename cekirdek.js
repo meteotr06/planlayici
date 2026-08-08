@@ -20,7 +20,8 @@ let veri = {
     denemeler: [], // deneme sınavları [{id, ad, tarih, tur, dogru, yanlis, bos, net}]
     konular: [],   // konu takip listesi [{id, ders, ad, durum 0=görmedim 1=tekrar 2=bitti}]
     hedefNet: null,// deneme grafiğindeki hedef çizgisi
-    soruDersler: []// soru sayacındaki kalıcı ders adları
+    soruDersler: [],// soru sayacındaki kalıcı ders adları
+    sonCheckin: null// günlük karşılama en son hangi gün yapıldı ("2026-08-08")
 };
 
 // ---------- Kaydet / Yükle ----------
@@ -39,6 +40,7 @@ function yukle() {
     veri.konular = veri.konular || [];
     veri.soruDersler = veri.soruDersler || [];
     if (veri.hedefNet === undefined) veri.hedefNet = null;
+    if (veri.sonCheckin === undefined) veri.sonCheckin = null;
     eskiVeriyiTasi();
 }
 
@@ -412,6 +414,68 @@ function gununSozu() {
     const t = new Date();
     const yilinGunu = Math.floor((t - new Date(t.getFullYear(), 0, 0)) / 86400000);
     return SOZLER[yilinGunu % SOZLER.length];
+}
+
+// ---------- ☀️ Günlük karşılama (check-in) ----------
+function checkinYapildiMi() {
+    return veri.sonCheckin === tarihAnahtari(new Date());
+}
+
+function checkinKaydet() {
+    veri.sonCheckin = tarihAnahtari(new Date());
+    kaydet();
+}
+
+// Karşılamada yazılan satırları plana çevirir.
+// Saatli satırlar ("16-17 matematik") doğrudan eklenir; saatsizler bugünün
+// (doluysa sonraki günlerin) boş saatlerine yerleştirilir. Enerji süreyi belirler.
+function gunlukPlanla(satirlar, enerji, bugunGun, simdiDak) {
+    const anahtar = haftaAnahtari(new Date());
+    const sure = enerji === "yorgun" ? 45 : enerji === "enerjik" ? 90 : 60;
+    let dogrudan = 0, yerlesen = 0, listeye = 0;
+    const saatsizler = [];
+
+    for (const satir of satirlar) {
+        const sonuc = hizliAyristir(satir, bugunGun);
+        if (!sonuc) continue;
+        if (sonuc.bas) {
+            blokEkle(anahtar, sonuc, sonuc.herHafta);
+            dogrudan++;
+        } else {
+            saatsizler.push(sonuc);
+        }
+    }
+
+    // Saatsizleri boş yerlere dağıt: bugün şu andan sonrası, olmazsa sonraki günler
+    const ekDolu = {};
+    for (const gorev of saatsizler) {
+        let yerlesti = false;
+        for (let g = bugunGun; g < 7 && !yerlesti; g++) {
+            const enErken = g === bugunGun ? Math.max(simdiDak, 8 * 60) : (g < 5 ? 16 * 60 : 9 * 60);
+            for (const a of bosAraliklar(anahtar, g, Math.min(sure, 45), enErken, 22 * 60 + 30)) {
+                let bas = Math.max(a.bas, enErken);
+                for (const [ds, de] of (ekDolu[g] || []).sort((x, y) => x[0] - y[0])) {
+                    if (bas < de && bas + 45 > ds) bas = de;
+                }
+                if (bas + 45 <= a.bit) {
+                    const bit = Math.min(bas + sure, a.bit);
+                    blokEkle(anahtar, { gun: g, bas: saatYaz(bas), bit: saatYaz(bit),
+                                        metin: gorev.metin, kategori: gorev.kategori }, false);
+                    (ekDolu[g] = ekDolu[g] || []).push([bas, bit]);
+                    yerlesti = true;
+                    yerlesen++;
+                    break;
+                }
+            }
+        }
+        if (!yerlesti) {
+            // Hiç boş yer yoksa "Boş vakitte" listesine koy, kaybolmasın
+            blokEkle(anahtar, { gun: -1, metin: gorev.metin, kategori: gorev.kategori }, false);
+            listeye++;
+        }
+    }
+    checkinKaydet();
+    return { dogrudan, yerlesen, listeye };
 }
 
 // En yakın gelecekteki hedef (üstteki büyük geri sayım için)

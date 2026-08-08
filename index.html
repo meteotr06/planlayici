@@ -27,6 +27,7 @@
             <span id="seviye" title="Seviyen — blok bitir, odaklan, soru çöz: XP kazan"></span>
             <span id="seri" title="Seri: üst üste kaç gün iş bitirdin"></span>
             <span id="ozet"></span>
+            <button id="checkinBtn" class="ikincil" title="Günlük planlama: bugün ne yapacaksın?">☀️</button>
             <button id="bildirimBtn" class="ikincil" title="Blok başlamadan hatırlatma"></button>
             <button id="ornekBtn" class="ikincil">🏫 Örnek program</button>
             <button id="yeniBlokBtn" class="birincil">＋ Blok Ekle</button>
@@ -249,6 +250,30 @@
                 <span class="bosluk"></span>
                 <button id="sIptal" class="ikincil">Vazgeç</button>
                 <button id="sOlustur" class="birincil">Programı Kur</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ☀️ Günlük karşılama: gün başında ne yapacağını sorar, plana döker -->
+    <div id="checkinKaplama" class="kaplama gizli">
+        <div class="pencere">
+            <h3 id="checkinBaslik">☀️ Günaydın!</h3>
+            <div id="checkinDurum" class="brifing"></div>
+            <label class="alan">Bugün enerjin nasıl?
+                <div class="gun-secim">
+                    <button type="button" class="gun-cip enerji" data-enerji="yorgun">😴 Yorgun</button>
+                    <button type="button" class="gun-cip enerji secili" data-enerji="normal">🙂 Normal</button>
+                    <button type="button" class="gun-cip enerji" data-enerji="enerjik">🔥 Enerjik</button>
+                </div>
+            </label>
+            <label class="alan">Bugün neler yapman gerekiyor? (her satıra bir iş — istersen saat de yaz)
+                <textarea id="checkinGorevler" rows="5" placeholder="matematik 40 soru&#10;16-17 fizik konu tekrarı&#10;ingilizce kelime ezberle&#10;odayı topla"></textarea>
+            </label>
+            <div class="panel-bos">Saat yazarsan o saate koyarım; yazmazsan bugünün boş saatlerine ben yerleştiririm. Enerjine göre blok süresini ayarlarım (😴 45 dk · 🙂 60 dk · 🔥 90 dk).</div>
+            <div class="dugmeler">
+                <span class="bosluk"></span>
+                <button id="checkinGec" class="ikincil">Bugün geç</button>
+                <button id="checkinPlanla" class="birincil">🪄 Günümü Planla</button>
             </div>
         </div>
     </div>
