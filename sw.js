@@ -2,13 +2,13 @@
 // Uygulamayı çevrimdışı da çalıştırır: dosyaları önbelleğe alır.
 // Yeni sürüm çıkarınca SURUM'u artır ki herkese taze dosyalar gitsin.
 
-const SURUM = "planlayici-v16";
+const SURUM = "planlayici-v17";
 const DOSYALAR = [
     "./",
     "./index.html",
-    "./stil.css?v=16",
-    "./cekirdek.js?v=16",
-    "./arayuz.js?v=16",
+    "./stil.css?v=17",
+    "./cekirdek.js?v=17",
+    "./arayuz.js?v=17",
     "./manifest.json",
     "./ikon-192.png",
     "./ikon-512.png",
