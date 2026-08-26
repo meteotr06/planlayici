@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="ikon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="stylesheet" href="stil.css?v=13" />
+    <link rel="stylesheet" href="stil.css?v=16" />
 </head>
 <body>
     <header>
@@ -180,6 +180,16 @@
             </section>
         </aside>
     </div>
+
+    <!-- Ayni adreste alti uygulama var; birbirlerini tanitsinlar -->
+    <nav class="diger-uyg" aria-label="Diğer uygulamalar">
+        <h2>Diğer ücretsiz uygulamalarım</h2>
+        <a href="../hesap/"><b>Hesap Araçları</b><span>Net maaş, kredi, kira, KDV — 35 araç</span></a>
+        <a href="../mobil/"><b>Hava Durumu</b><span>Saatlik ve 7 günlük</span></a>
+        <a href="../kur-pusulasi/"><b>Kur Pusulası</b><span>Döviz, altın ve tahmin</span></a>
+        <a href="../goz-molasi/"><b>Göz Molası</b><span>Ekran başında göz yorgunluğuna</span></a>
+        <a href="../muhasebe/"><b>Muhasebe</b><span>Gelir, gider, kasa ve cari</span></a>
+    </nav>
 
     <!-- Blok ekleme / düzenleme penceresi -->
     <div id="kaplama" class="kaplama gizli">
@@ -362,8 +372,8 @@
     </div>
 
     <!-- Önce çekirdek (mantık), sonra arayüz (görünüm) yüklenir -->
-    <script src="cekirdek.js?v=13"></script>
-    <script src="arayuz.js?v=13"></script>
+    <script src="cekirdek.js?v=16"></script>
+    <script src="arayuz.js?v=16"></script>
     <script>
         // Çevrimdışı çalışma (PWA): service worker'ı kaydet
         if ("serviceWorker" in navigator && location.protocol !== "file:") {

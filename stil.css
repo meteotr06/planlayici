@@ -71,7 +71,7 @@ header {
 header h1 { font-size: 1.25rem; }
 header h1 span { color: var(--vurgu); }
 
-.hafta-gezinti { display: flex; align-items: center; gap: 6px; }
+.hafta-gezinti { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; }
 
 .hafta-gezinti button, .ikincil {
     background: var(--kart);
@@ -84,8 +84,13 @@ header h1 span { color: var(--vurgu); }
 .hafta-gezinti button:hover, .ikincil:hover { background: var(--kart-acik); }
 
 #haftaEtiketi { font-weight: 600; min-width: 185px; text-align: center; font-size: 0.95rem; }
+@media (max-width: 430px) {
+    #haftaEtiketi { min-width: 0; flex: 1 1 100%; }
+    header h1 { font-size: 1.1rem; flex: 1 1 100%; }
+}
 
-.sag-grup { display: flex; align-items: center; gap: 10px; }
+/* 11 dugme dar ekranda tek satira sigmiyordu; sarsin ki sayfa tasmasin */
+.sag-grup { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; }
 #ozet { color: var(--soluk); font-size: 0.88rem; }
 #ozet b { color: var(--yesil); }
 
@@ -824,4 +829,51 @@ details.panel[open] summary::after { content: "▾"; }
     .govde { flex-direction: column; }
     .takvim { max-height: 70vh; }
     .yan-panel { width: 100%; }
+}
+
+
+/* ---------- Diğer uygulamalara köprü ----------
+   Altı uygulama aynı adreste; alt bilgide birbirlerini tanıtıyorlar. */
+.diger-uyg { margin: 26px 0 10px; }
+.diger-uyg h2 {
+    font-size: 0.85rem; font-weight: 600; color: var(--soluk);
+    margin: 0 0 9px; grid-column: 1 / -1;
+}
+.diger-uyg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; align-items: start; }
+.diger-uyg a {
+    display: block; padding: 11px 13px; border-radius: 12px;
+    background: var(--kart); border: 1px solid var(--kenar);
+    text-decoration: none; min-height: 44px;
+    transition: border-color .15s, transform .15s;
+}
+.diger-uyg a:hover { border-color: var(--vurgu); transform: translateY(-1px); }
+.diger-uyg a b { display: block; color: var(--yazi); font-size: 0.92rem; }
+.diger-uyg a span { display: block; color: var(--soluk); font-size: 0.78rem; margin-top: 2px; }
+@media (min-width: 720px) { .diger-uyg { grid-template-columns: repeat(5, 1fr); } }
+@media print { .diger-uyg { display: none !important; } }
+
+/* Telefonda kart yerine kucuk etiket: bes kart dar ekranda cok yer kapliyordu
+   (Muhasebe'de sayfanin %30'u). Baglantilar ayni, sadece gorunum kompakt. */
+@media (max-width: 719px) {
+  .diger-uyg, .diger-izgara { display: block !important; }
+  .diger-uyg > a, .diger-izgara > a {
+    display: inline-block; padding: 12px 15px; margin: 0 6px 7px 0;
+    border-radius: 999px; min-height: 0;
+  }
+  .diger-uyg > a span, .diger-izgara > a span { display: none; }
+  .diger-uyg > a b, .diger-izgara > a b { font-size: 13px; font-weight: 500; }
+}
+
+/* ---------- Telefonda dokunma hedefleri ----------
+   Uygulama masaustu icin tasarlanmisti; dugmeler 25-35px kaliyordu.
+   Parmakla rahat basmak icin en az 40px lazim (cip'lerde 36 yeterli). */
+@media (max-width: 719px) {
+    button, .ikincil, .birincil, .tehlike,
+    input[type="text"], input[type="number"], input[type="time"],
+    input[type="date"], input[type="search"], select {
+        min-height: 40px;
+    }
+    .filtre-cip, .gun-cip, .yazi-cip { min-height: 38px; }
+    /* Cip'ler artik daha yuksek; satir araligini da acalim ki sikismasin */
+    .filtre-serit { gap: 7px; }
 }
