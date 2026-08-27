@@ -4,11 +4,18 @@
 
 const SURUM = "planlayici-v19";
 const DOSYALAR = [
+    // ⚠️ BU LİSTE index.html'İ BİREBİR YANSITMALI.
+    // Ölçüldü (27.08.2026, CANLIDA): index.html "cekirdek.js?v=19" istiyordu,
+    // burası "?v=17" saklıyordu. Farklı anahtar = hiç eşleşme. Çevrimiçi
+    // hiçbir şey bozulmaz; internet kesikken uygulama YARIM açılır — yani
+    // çevrimdışı katmanı tam da iş görmesi gereken anda boş döner.
+    // Sürüm artırırken index.html ile birlikte BURAYI da güncelle.
+    // `yayin_denetle.py` bunu artık denetliyor.
     "./",
     "./index.html",
     "./stil.css?v=17",
-    "./cekirdek.js?v=17",
-    "./arayuz.js?v=17",
+    "./cekirdek.js?v=19",
+    "./arayuz.js?v=19",
     "./manifest.json",
     "./ikon-192.png",
     "./ikon-512.png",
