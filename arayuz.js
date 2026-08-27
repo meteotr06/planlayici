@@ -113,7 +113,16 @@ function soruCiz() {
         ad.onclick = () => {
             const cevap = prompt("\"" + ders + "\" için günlük soru hedefi kaç olsun? (0 = hedefi kaldır)",
                                  veri.soruHedefleri[ders] || "");
-            if (cevap !== null) { soruHedefAyarla(ders, Number(cevap) || 0); ciz(); }
+            if (cevap !== null) {
+                // Number(cevap)||0 idi: "12,5" yazan kullanicinin hedefi NaN
+                // olup 0'a dusuyor, 0 da "hedefi kaldir" demek oldugu icin
+                // HEDEF SESSIZCE SILINIYORDU. Artik okunamayan girdi
+                // hedefe dokunmaz, kullaniciya soylenir.
+                const t = cevap.trim();
+                const d = t === "" ? 0 : sayiOku(t);
+                if (d === null) alert("\"" + t + "\" bir sayi degil. Hedef degistirilmedi.");
+                else { soruHedefAyarla(ders, d); ciz(); }
+            }
         };
         const hedef = veri.soruHedefleri[ders];
         const sayi = document.createElement("b");
@@ -203,7 +212,15 @@ document.getElementById("denemeEkleBtn").onclick = () => {
 };
 
 document.getElementById("hedefNetBtn").onclick = () => {
-    hedefNetAyarla(Number(document.getElementById("dHedefNet").value));
+    /* Turkce ondalik ("12,5") type="number" yuzunden bos donuyordu ve
+       Number("") = 0 ile hedef SESSIZCE sifirlaniyordu. Artik cozumleyici
+       okuyor; okunamayan girdide hedef DEGISTIRILMIYOR. */
+    const hedefDeger = sayiOku(document.getElementById("dHedefNet").value);
+    if (hedefDeger === null || hedefDeger < 0) {
+        alert("Hedef net anlasilamadi. Ornek: 12,5");
+        return;
+    }
+    hedefNetAyarla(hedefDeger);
     document.getElementById("dHedefNet").value = "";
     ciz();
 };
@@ -1479,8 +1496,8 @@ document.getElementById("aKapat").onclick = () => ayarlarKaplama.classList.add("
 ayarlarKaplama.onclick = (e) => { if (e.target === ayarlarKaplama) ayarlarKaplama.classList.add("gizli"); };
 
 document.getElementById("aKaydet").onclick = () => {
-    ayarGuncelle("odakDk", Math.max(5, Math.min(120, Number(document.getElementById("aOdakDk").value) || 25)));
-    ayarGuncelle("molaDk", Math.max(1, Math.min(60, Number(document.getElementById("aMolaDk").value) || 5)));
+    ayarGuncelle("odakDk", Math.max(5, Math.min(120, sayiOku(document.getElementById("aOdakDk").value) || 25)));
+    ayarGuncelle("molaDk", Math.max(1, Math.min(60, sayiOku(document.getElementById("aMolaDk").value) || 5)));
     ayarGuncelle("varsayilanSure", Number(document.getElementById("aVarsayilanSure").value) || 60);
     ayarGuncelle("ses", document.getElementById("aSes").checked);
     ayarlarKaplama.classList.add("gizli");

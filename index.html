@@ -94,13 +94,13 @@
                     </div>
                     <div class="ekle-mini">
                         <input id="dTarih" type="date" />
-                        <input id="dDogru" type="number" min="0" placeholder="D" title="Doğru" />
-                        <input id="dYanlis" type="number" min="0" placeholder="Y" title="Yanlış" />
-                        <input id="dBos" type="number" min="0" placeholder="B" title="Boş" />
+                        <input id="dDogru" type="text" placeholder="D" title="Doğru" inputmode="numeric" />
+                        <input id="dYanlis" type="text" placeholder="Y" title="Yanlış" inputmode="numeric" />
+                        <input id="dBos" type="text" placeholder="B" title="Boş" inputmode="numeric" />
                         <button id="denemeEkleBtn" class="birincil">+</button>
                     </div>
                     <div class="ekle-mini">
-                        <input id="dHedefNet" type="number" min="0" step="0.5" placeholder="Hedef net (grafik çizgisi)" />
+                        <input id="dHedefNet" type="text" placeholder="Hedef net (grafik çizgisi)" inputmode="decimal" />
                         <button id="hedefNetBtn" class="ikincil">Hedefi kaydet</button>
                     </div>
                 </div>
@@ -125,7 +125,7 @@
                 </div>
                 <div class="ekle-mini">
                     <input id="kaynakDers" type="text" placeholder="Ders" />
-                    <input id="kaynakToplam" type="number" min="1" placeholder="Toplam soru/sayfa" />
+                    <input id="kaynakToplam" type="text" placeholder="Toplam soru/sayfa" inputmode="numeric" />
                     <button id="kaynakEkleBtn" class="birincil">+</button>
                 </div>
             </details>
@@ -330,10 +330,10 @@
             <h3>⚙️ Ayarlar</h3>
             <div class="satir">
                 <label class="alan">🎯 Odak süresi (dk)
-                    <input id="aOdakDk" type="number" min="5" max="120" />
+                    <input id="aOdakDk" type="text" inputmode="numeric" />
                 </label>
                 <label class="alan">☕ Mola süresi (dk)
-                    <input id="aMolaDk" type="number" min="1" max="60" />
+                    <input id="aMolaDk" type="text" inputmode="numeric" />
                 </label>
             </div>
             <label class="alan">🧱 Boş saate tıklayınca eklenen blok süresi
@@ -372,8 +372,8 @@
     </div>
 
     <!-- Önce çekirdek (mantık), sonra arayüz (görünüm) yüklenir -->
-    <script src="cekirdek.js?v=17"></script>
-    <script src="arayuz.js?v=17"></script>
+    <script src="cekirdek.js?v=19"></script>
+    <script src="arayuz.js?v=19"></script>
     <script>
         // Çevrimdışı çalışma (PWA): service worker'ı kaydet
         if ("serviceWorker" in navigator && location.protocol !== "file:") {

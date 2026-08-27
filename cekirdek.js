@@ -52,6 +52,21 @@ function yukle() {
     veri.soruHedefleri = veri.soruHedefleri || {};
     veri.kaynaklar = veri.kaynaklar || [];
     eskiVeriyiTasi();
+
+    // BU GOCURME SURUMDEN BAGIMSIZ CALISIR.
+    // Ilk yazdigimda `eskiVeriyiTasi()` icine koymustum; orasi
+    // `if (veri.surum >= 2) return;` ile korunuyor, yani duzeltme tam da
+    // duzeltilmesi gereken kullaniciya -- verisi zaten surum 2 olana --
+    // HIC ulasmiyordu. Yalnizca sifirdan baslayanlar duzelirdi.
+    // Baslangic haftasi olmayan tekrarlayan isin gercek tarihi id'sinde
+    // yaziyor. Cozulemezse null kalir: "her zaman gecerli", yani eski
+    // davranis -- kullanicinin daha once gordugu sayilari ters yonde de
+    // sessizce degistirmeyiz.
+    let gocenVar = false;
+    for (const b of (veri.tekrarlayan || [])) {
+        if (b.baslangic === undefined) { b.baslangic = idHaftasi(b.id); gocenVar = true; }
+    }
+    if (gocenVar) kaydet();
 }
 
 // Eski (saatsiz görev) sürümden kalan veri varsa yeni biçime çevirir.
@@ -122,6 +137,22 @@ function benzersizId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
+// Bir id'nin ilk parcasi Date.now().toString(36) — yani olusturma zamani.
+// Baslangic haftasi kaydedilmemis ESKI tekrarlayan isler icin gercek
+// tarihi buradan geri kazaniyoruz; tahmin degil, kaydin kendisi.
+// Cozulemezse null doner: "her zaman gecerli" (eski davranis korunur,
+// kullanicinin daha once gordugu sayilari sessizce degistirmeyiz).
+function idHaftasi(id) {
+    const s = String(id || "");
+    if (s.length < 6) return null;
+    const ms = parseInt(s.slice(0, -5), 36);
+    if (!Number.isFinite(ms)) return null;
+    const t = new Date(ms);
+    const yil = t.getFullYear();
+    if (yil < 2020 || yil > 2100) return null;   // id bu bicimde uretilmemis
+    return haftaAnahtari(t);
+}
+
 function blokEkle(anahtar, bilgi, herHafta) {
     const metin = (bilgi.metin || "").trim();
     if (!metin) return null;
@@ -135,6 +166,14 @@ function blokEkle(anahtar, bilgi, herHafta) {
         not: bilgi.not || ""
     };
     if (herHafta) {
+        // BASLANGIC HAFTASI SART.
+        // Olculdu (27.08.2026): tekrarlayan isler global tutuluyordu ve
+        // hafta filtresi yoktu. Bugun "her hafta spor" eklemek GECEN
+        // HAFTAYI da degistiriyordu: %100 -> %75, planlanan sure 180 ->
+        // 240 dk. O hafta hic var olmayan bir is geriye donuk olarak
+        // "yapilmamis" sayiliyordu. Kullanici gecmisine bakip yanlis
+        // hatirladigini saniyordu.
+        blok.baslangic = anahtar;
         veri.tekrarlayan.push(blok);
     } else {
         blok.tamam = false;
@@ -173,6 +212,9 @@ function blokGuncelle(anahtar, id, bilgi, herHafta) {
         not: bilgi.not !== undefined ? bilgi.not : (eski.not || "")
     };
     if (herHafta) {
+        // Duzenleme baslangici silmemeli, yoksa is gecmise geri sizar.
+        // Tekrarli DEGILKEN tekrarli yapildiysa baslangic yok: id'den al.
+        yeni.baslangic = eski.baslangic || idHaftasi(id) || anahtar;
         veri.tekrarlayan.push(yeni);
         if (tamamdi) hafta.tamamlananTekrar.push(id);
     } else {
@@ -298,8 +340,57 @@ function haftaSoruToplam() {
 
 // ---------- 📝 Deneme net takibi ----------
 // net = doğru - yanlış/4 (TYT/AYT), LGS'de yanlış/3
+/* ---------------------------------------------------------------------
+   TURKCE SAYI COZUMLEYICI
+   ---------------------------------------------------------------------
+   Olculdu (26.08.2026, capraz denetim): 7 sayi alaninin hepsi
+   `type="number"` idi ve tarayici Turkce ondaligi REDDEDIYORDU:
+
+       "12,5"  -> kutuda "" kalir -> Number("") = 0
+       "0,300" -> ""              -> 0
+       "1.500" -> "1.500"         -> 1,5   (binlik ondalik sanildi)
+
+   En tehlikelisi `dHedefNet`: `step="0.5"` yani ondalik girilmesi
+   BEKLENIYOR, ama "12,5" yazan kullanicinin hedefi SESSIZCE 0 oluyordu.
+   Cokme yok, uyari yok, grafik cizgisi sifira duser.
+
+   `aOdakDk`/`aMolaDk` kazara korunmustu (`Number(...) || 25` yedegi vardi);
+   `dHedefNet`in yedegi yoktu.
+
+   Kural: iki ayrac varsa SONDAKI ondaliktir; yalniz virgul ondalik;
+   yalniz nokta 3'lu gruplama kalibina uyuyorsa binlik. float'a vermeden
+   once bicim dogrulanir ki "nan"/"1e3"/"1_000" sessizce gecmesin.
+   ------------------------------------------------------------------- */
+function sayiOku(girdi, tur) {
+    if (girdi === null || girdi === undefined) return null;
+    if (typeof girdi === "number") return isFinite(girdi) ? girdi : null;
+
+    let m = String(girdi).trim().replace(/\s/g, "");
+    if (!m) return null;
+
+    const oranMi = tur === "oran";
+    const sifirlaBasliyor = /^-?0[.,]/.test(m);
+    const binlikOlabilir = !oranMi && !sifirlaBasliyor;
+
+    const sonNokta = m.lastIndexOf("."), sonVirgul = m.lastIndexOf(",");
+    if (sonNokta !== -1 && sonVirgul !== -1) {
+        m = sonVirgul > sonNokta
+            ? m.replace(/\./g, "").replace(",", ".")
+            : m.replace(/,/g, "");
+    } else if (sonVirgul !== -1) {
+        m = (binlikOlabilir && /^-?\d{1,3}(,\d{3})+$/.test(m))
+            ? m.replace(/,/g, "") : m.replace(/,/g, ".");
+    } else if (sonNokta !== -1) {
+        if (binlikOlabilir && /^-?\d{1,3}(\.\d{3})+$/.test(m)) m = m.replace(/\./g, "");
+    }
+
+    if (!/^[+-]?(\d+(\.\d+)?|\.\d+)$/.test(m)) return null;
+    const d = parseFloat(m);
+    return isFinite(d) ? d : null;
+}
+
 function denemeEkle(ad, tarih, tur, dogru, yanlis, bos) {
-    dogru = Number(dogru) || 0; yanlis = Number(yanlis) || 0; bos = Number(bos) || 0;
+    dogru = sayiOku(dogru) || 0; yanlis = sayiOku(yanlis) || 0; bos = sayiOku(bos) || 0;
     const net = tur === "LGS" ? dogru - yanlis / 3 : dogru - yanlis / 4;
     veri.denemeler.push({
         id: benzersizId(), ad: (ad || "Deneme").trim(), tarih, tur,
@@ -709,9 +800,12 @@ function gunBloklari(anahtar, gun) {
     const hafta = haftaKaydi(anahtar);
     const liste = [];
     for (const b of veri.tekrarlayan) {
-        if (b.gun === gun) {
-            liste.push({ ...b, tamam: hafta.tamamlananTekrar.includes(b.id), tekrarli: true });
-        }
+        if (b.gun !== gun) continue;
+        // Is, kendisinden ONCEKI haftalarda yoktu. Hafta etiketleri
+        // "2026-W34" bicminde ve sifir dolgulu oldugu icin duz metin
+        // karsilastirmasi yil sinirinda da dogru calisir.
+        if (b.baslangic && anahtar < b.baslangic) continue;
+        liste.push({ ...b, tamam: hafta.tamamlananTekrar.includes(b.id), tekrarli: true });
     }
     for (const b of hafta.bloklar) {
         if (b.gun === gun) {
@@ -776,7 +870,26 @@ function disaAktar() {
 }
 
 // Yedek dosyasındaki veriyi geçerliyse yükler. Başarılıysa true döner.
+//
+// BASARISIZ YUKLEME KULLANICININ VERISINI SILMEMELI.
+//
+// Olculdu (27.08.2026): `veri = aday` gocurmeden ONCE calisiyordu.
+// Bicim denetimini gecen ama `eskiVeriyiTasi()` icinde coken bir dosya
+// (orn. `haftalar` girdisinin `gorevler` alani dizi degilse) su sonucu
+// veriyordu:
+//   - iceAktar false doner, kullaniciya "gecersiz dosya" denir
+//   - AMA bellekteki `veri` coktan degismistir: plan gitmistir
+//   - kullanici herhangi bir sey yapinca `kaydet()` bosalmis veriyi
+//     DISKE yazar
+// Yani ekranda "yukleme basarisiz" yazarken haftalarca plan siliniyordu.
+// En tehlikeli hata cokme degil, sessiz kayipti -- burada ikisi birden
+// oluyordu: hata yakalaniyor, kayip sessiz kaliyor.
+//
+// Cozum: coken her yolda onceki veriye geri don. `kaydet()` yalnizca
+// hersey basarili olunca calisir, o yuzden diskteki kayit zaten
+// bozulmamis oluyor; geri almamiz gereken tek sey bellekteki durum.
 function iceAktar(metin) {
+    const onceki = veri;
     try {
         const aday = JSON.parse(metin);
         if (!aday || typeof aday !== "object" || !aday.haftalar || !Array.isArray(aday.tekrarlayan)) {
@@ -788,6 +901,7 @@ function iceAktar(metin) {
         kaydet();
         return true;
     } catch (e) {
+        veri = onceki;   // kullanicinin verisi yerine geri konur
         return false;
     }
 }
@@ -1150,8 +1264,12 @@ function soruHedefAyarla(ders, adet) {
 // Soru bankası / kitap ilerlemesi: "Karekök Matematik 120/340"
 function kaynakEkle(ad, ders, toplam) {
     ad = (ad || "").trim();
-    toplam = Number(toplam) || 0;
-    if (!ad || toplam <= 0) return false;
+    // Number() KULLANMIYORUZ. Alan type="text" oldugu icin metin ham geliyor
+    // ve Number("1.500") 1,5 verir: "1.500 soruluk kitap" 1,5 soru olarak
+    // kaydediliyordu. Donen deger true oldugu icin de hicbir uyari cikmiyordu.
+    // Olculdu (27 Agustos 2026): kaynakEkle(...,"1.500") -> toplam 1.5.
+    toplam = sayiOku(toplam);
+    if (!ad || toplam === null || toplam <= 0) return false;
     veri.kaynaklar.push({ id: benzersizId(), ad, ders: (ders || "").trim(), toplam, yapilan: 0 });
     kaydet();
     return true;
