@@ -29,13 +29,55 @@ let veri = {
     kaynaklar: []     // kitap / soru bankası takibi [{id, ad, ders, toplam, yapilan}]
 };
 
+// ---------- Depolama (korumalı) ----------
+// KORUMASIZ localStorage = BOMBOŞ SAYFA.
+// Ölçüldü (01.09.2026): localStorage'a erişimi engellenmiş bir ortamda
+// (gizli sekme + site verisi engelli, iç içe çerçeve, "üçüncü taraf
+// çerezleri engelle" ayarı) kaynak kodu şöyle davranıyordu:
+//     cekirdek.js  yukle()   -> KALDI (SecurityError: Access is denied...)
+//     cekirdek.js  kaydet()  -> KALDI (SecurityError)
+//     arayuz.js    26. satır -> KALDI (SecurityError)
+// Üçüncüsü en ölümcülü: o satır arayuz.js'in en tepesinde, dosya
+// yüklenirken çalışıyor. Orada patlayınca arayuz.js'in TAMAMI durur —
+// hiçbir düğme bağlanmaz, ciz() hiç çağrılmaz. Kullanıcı beyaz/boş bir
+// sayfa görür, konsolu açmadığı için de sebebini asla anlamaz.
+//
+// Bundan sonra depoya yalnızca bu üç kapıdan girilir. Erişim yoksa
+// uygulama ÇALIŞMAYA DEVAM EDER (o oturumda kayıt olmaz) ve kullanıcı
+// uyarılır — sessizce veri kaybetmek en kötü sonuç olurdu.
+let depoCalisiyor = true;
+let depoUyarisi = null;   // arayuz.js dolduruyor: ekranda uyarı göstersin
+
+function depoBozuldu() {
+    if (!depoCalisiyor) return;          // bir kez uyar, her tuşta değil
+    depoCalisiyor = false;
+    if (typeof depoUyarisi === "function") depoUyarisi();
+}
+
+function depoOku(anahtar) {
+    try { return localStorage.getItem(anahtar); }
+    catch (e) { depoBozuldu(); return null; }
+}
+
+function depoYaz(anahtar, deger) {
+    try { localStorage.setItem(anahtar, deger); return true; }
+    // Buraya "kota doldu" (QuotaExceededError) da düşer. O da sessiz veri
+    // kaybıdır: kullanıcı yazmaya devam eder, hiçbiri kaydedilmez.
+    catch (e) { depoBozuldu(); return false; }
+}
+
+function depoSil(anahtar) {
+    try { localStorage.removeItem(anahtar); return true; }
+    catch (e) { depoBozuldu(); return false; }
+}
+
 // ---------- Kaydet / Yükle ----------
 function kaydet() {
-    localStorage.setItem(KAYIT_ADI, JSON.stringify(veri));
+    return depoYaz(KAYIT_ADI, JSON.stringify(veri));
 }
 
 function yukle() {
-    const ham = localStorage.getItem(KAYIT_ADI);
+    const ham = depoOku(KAYIT_ADI);
     if (!ham) return;
     veri = JSON.parse(ham);
     veri.hedefler = veri.hedefler || [];
@@ -1375,7 +1417,7 @@ function ayarGuncelle(ad, deger) {
 
 // Her şeyi siler — sadece Ayarlar'daki çift onaylı düğmeden çağrılır!
 function tumVeriyiSil() {
-    localStorage.removeItem(KAYIT_ADI);
+    depoSil(KAYIT_ADI);
 }
 
 // Hiç kayıt var mı? (örnek program önerisi için)

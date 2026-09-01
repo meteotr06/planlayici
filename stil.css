@@ -150,6 +150,18 @@ header h1 span { color: var(--vurgu); }
 }
 #bildirim.acik { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* Depolama engelliyse cikan KALICI uyari cubugu. Bildirim kutusu gibi
+   kaybolmaz: "yazdiklarin kaydedilmiyor" mesaji gorulmeden gecmemeli. */
+#depoUyari {
+    background: #7a1f1f;
+    color: #fff5f5;
+    border-bottom: 2px solid #ff6b6b;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    text-align: center;
+}
+
 /* ---------- Kategori filtresi ---------- */
 .filtre-serit { display: flex; flex-wrap: wrap; gap: 6px; }
 

@@ -23,7 +23,7 @@ let haftaKaydirma = 0;          // 0 = bu hafta, -1 = geçen, 1 = gelecek
 let duzenlenenId = null;        // pencere açıkken düzenlenen blok (yeni ise null)
 let ilkCizim = true;
 let gizliKategoriler = new Set(); // filtreyle gizlenenler
-let gorunum = localStorage.getItem("gorunum") || "hafta"; // "hafta" | "bugun"
+let gorunum = depoOku("gorunum") || "hafta"; // "hafta" | "bugun"
 
 function bakilanTarih() {
     const t = new Date();
@@ -1046,7 +1046,7 @@ const bildirilenler = new Set();
 function bildirimDugmesiGuncelle() {
     const dugme = document.getElementById("bildirimBtn");
     if (!("Notification" in window)) { dugme.style.display = "none"; return; }
-    const kapali = localStorage.getItem("bildirimKapali") === "1";
+    const kapali = depoOku("bildirimKapali") === "1";
     const acik = Notification.permission === "granted" && !kapali;
     dugme.textContent = acik ? "🔔" : "🔕";
     dugme.title = acik ? "Hatırlatmalar açık (kapatmak için tıkla)"
@@ -1057,20 +1057,20 @@ document.getElementById("bildirimBtn").onclick = async () => {
     if (Notification.permission !== "granted") {
         const izin = await Notification.requestPermission();
         if (izin === "granted") {
-            localStorage.removeItem("bildirimKapali");
+            depoSil("bildirimKapali");
             bildirimGoster("🔔 Hatırlatmalar açık! Blok başlamadan 5 dk önce haber veririm.");
         }
     } else {
-        const kapali = localStorage.getItem("bildirimKapali") === "1";
-        if (kapali) localStorage.removeItem("bildirimKapali");
-        else localStorage.setItem("bildirimKapali", "1");
+        const kapali = depoOku("bildirimKapali") === "1";
+        if (kapali) depoSil("bildirimKapali");
+        else depoYaz("bildirimKapali", "1");
     }
     bildirimDugmesiGuncelle();
 };
 
 setInterval(() => {
     if (!("Notification" in window) || Notification.permission !== "granted") return;
-    if (localStorage.getItem("bildirimKapali") === "1") return;
+    if (depoOku("bildirimKapali") === "1") return;
     const simdi = new Date();
     const dk = simdi.getHours() * 60 + simdi.getMinutes();
     const bugunGun = (simdi.getDay() + 6) % 7;
@@ -1339,17 +1339,43 @@ document.getElementById("sOlustur").onclick = () => {
 };
 
 // ---------- Hızlı ekleme çubuğu ----------
+// EKRAN OKUYUCU İÇİN CANLI BÖLGE.
+// Ölçüldü (01.09.2026): sayfada aria-live sayısı SIFIRDI. Bu kutu
+// uygulamanın tek geri bildirim yeri — "✔ eklendi", "🗑 silindi",
+// "⚙️ ayarlar kaydedildi" hepsi buradan geçiyor. aria-live yokken
+// görmeyen kullanıcı işleminin olup olmadığını hiç öğrenemiyordu:
+// ekranda bir şey belirip kayboluyor, sessizlik aynı kalıyor.
+// role="status" + aria-live="polite" = kullanıcının sözünü kesmeden okur.
 function bildirimGoster(mesaj) {
     let kutu = document.getElementById("bildirim");
     if (!kutu) {
         kutu = document.createElement("div");
         kutu.id = "bildirim";
+        kutu.setAttribute("role", "status");
+        kutu.setAttribute("aria-live", "polite");
+        kutu.setAttribute("aria-atomic", "true");
         document.body.appendChild(kutu);
     }
     kutu.textContent = mesaj;
     kutu.classList.add("acik");
     clearTimeout(kutu._zaman);
     kutu._zaman = setTimeout(() => kutu.classList.remove("acik"), 2600);
+}
+
+// Depolama kapalıysa KALICI uyarı.
+// Normal bildirim kutusu 2,6 saniyede kayboluyor; "yazdıkların
+// kaydedilmiyor" mesajı kaybolmamalı. Bütün gün plan yazıp hiçbirinin
+// kaydedilmediğini kapatınca öğrenmek, çökmekten daha kötüdür.
+// role="alert" = ekran okuyucu bunu hemen okur (assertive).
+function depolamaUyarisiGoster() {
+    if (document.getElementById("depoUyari")) return;
+    const bar = document.createElement("div");
+    bar.id = "depoUyari";
+    bar.setAttribute("role", "alert");
+    bar.textContent = "⚠️ Tarayıcı bu sayfada veri saklamaya izin vermiyor. " +
+                      "Uygulama çalışır ama YAZDIKLARIN KAYDEDİLMEZ — sekmeyi " +
+                      "kapatınca kaybolur. (Gizli sekme veya site verisi engeli olabilir.)";
+    document.body.prepend(bar);
 }
 
 function hizliEkle() {
@@ -1628,14 +1654,14 @@ document.getElementById("aVeriSil").onclick = () => {
 
 // ---------- 🌗 Tema ve görünüm düğmeleri ----------
 function temaUygula() {
-    const acik = localStorage.getItem("tema") === "acik";
+    const acik = depoOku("tema") === "acik";
     document.body.classList.toggle("acik", acik);
     document.getElementById("temaBtn").textContent = acik ? "🌙" : "☀️🌙";
     document.getElementById("temaBtn").title = acik ? "Koyu temaya geç" : "Açık temaya geç";
 }
 
 document.getElementById("temaBtn").onclick = () => {
-    localStorage.setItem("tema", localStorage.getItem("tema") === "acik" ? "koyu" : "acik");
+    depoYaz("tema", depoOku("tema") === "acik" ? "koyu" : "acik");
     temaUygula();
 };
 
@@ -1645,7 +1671,7 @@ function gorunumDugmesiGuncelle() {
 
 document.getElementById("gorunumBtn").onclick = () => {
     gorunum = gorunum === "bugun" ? "hafta" : "bugun";
-    localStorage.setItem("gorunum", gorunum);
+    depoYaz("gorunum", gorunum);
     if (gorunum === "bugun") haftaKaydirma = 0;
     gorunumDugmesiGuncelle();
     ciz();
@@ -1698,6 +1724,13 @@ setInterval(() => {
 }, 60000);
 
 // Başlangıç
+// Uyarı kancasını yukle()'den ÖNCE tak. Ayrıca arayuz.js'in 26. satırı
+// (görünüm okuma) buradan daha erken çalışıyor; orada depo bozulduysa
+// kanca henüz yoktu ve depoBozuldu() bir daha uyarmaz — o yüzden
+// bayrağa burada elle bakılıyor.
+depoUyarisi = depolamaUyarisiGoster;
+if (!depoCalisiyor) depolamaUyarisiGoster();
+
 yukle();
 bildirimDugmesiGuncelle();
 temaUygula();
