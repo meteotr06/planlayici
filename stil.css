@@ -260,6 +260,19 @@ header h1 span { color: var(--vurgu); }
 .blok:hover { filter: brightness(1.2); z-index: 3; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35); }
 .blok.suruklenen { opacity: 0.75; cursor: grabbing; z-index: 10; box-shadow: 0 6px 18px rgba(0,0,0,0.5); }
 
+/* Blok artik klavyeyle odaklanabiliyor (tabindex=0). Odak GORUNMEZSE
+   klavye erisimi yarim kalir: kullanici hangi blogun uzerinde oldugunu
+   bilemez ve Delete'e basmaya cesaret edemez. Cizgi blogun disina
+   tasiyor (outline-offset) cunku blogun kendisi overflow:hidden. */
+.blok:focus { outline: none; }
+.blok:focus-visible {
+    outline: 3px solid #ffffff;
+    outline-offset: -1px;
+    z-index: 4;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.6);
+}
+.takvim:focus { outline: none; }
+
 .blok input[type="checkbox"] {
     position: absolute;
     left: 4px;

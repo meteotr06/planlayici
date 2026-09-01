@@ -608,6 +608,25 @@ function blokElemaniYap(b, yer, anahtar) {
     const el = document.createElement("div");
     el.className = "blok" + (b.tamam ? " tamam" : "");
     el.dataset.id = b.id;
+
+    // KLAVYE ERİŞİMİ.
+    // Ölçüldü (01.09.2026, 127.0.0.1 üzerinde gerçek sayfada):
+    //   tabIndex = -1 · odak sırasında YOK · Enter pencere açmıyor · Delete silmiyor
+    // Yani blok yalnızca fare ile açılabiliyor, taşınabiliyor ve silinebiliyordu.
+    // Klavyeyle çalışan bir kullanıcı yanlışlıkla eklediği bloğa bir daha
+    // ULAŞAMIYORDU: o blok onun için kalıcıydı. Çökme yok, veri yanlış değil —
+    // ama kullanıcı kendi verisini geri alamıyor.
+    // Bu yüzden blok artık gerçek bir düğme gibi davranıyor: odaklanılır,
+    // Enter açar, Delete siler, oklar taşır.
+    //
+    // YARIM KALAN: role="button" içinde "tamamlandı" kutucuğu duruyor.
+    // ARIA'ya göre düğmenin içinde başka etkileşimli öğe olmamalı. Kutucuk
+    // ölçüldü, sekme sırasında duruyor ve çalışıyor (blok 20, kutucuk 21);
+    // ama bazı ekran okuyucular gezinme kipinde onu düğmenin içinde
+    // göstermeyebilir. Doğrusu kutucuğu bloğun dışına almak; bu, çizim
+    // ve yerleşim kodunu baştan yazmayı gerektirdiği için yapılmadı.
+    el.tabIndex = 0;
+    el.setAttribute("role", "button");
     el.style.top = (basDak / 60 * SAAT_YUKSEKLIK) + "px";
     el.style.height = ((bitDak - basDak) / 60 * SAAT_YUKSEKLIK - 2) + "px";
     el.style.width = "calc(" + (100 / yer.toplam) + "% - 4px)";
@@ -641,7 +660,102 @@ function blokElemaniYap(b, yer, anahtar) {
         surukleBaslat(e, b, el, e.target === tutamac ? "uzat" : "tasi");
     });
 
+    // Ekran okuyucu için bloğun tam künyesi + hangi tuşun ne yaptığı
+    el.setAttribute("aria-label",
+        (b.gun >= 0 ? GUN_ADLARI[b.gun] + " " : "") + b.bas + "–" + b.bit + ", " +
+        kat.ad + ": " + b.metin + (b.tekrarli ? ", her hafta tekrar ediyor" : "") +
+        (b.tamam ? ", tamamlandı" : "") +
+        ". Enter düzenle, Delete sil, oklarla taşı.");
+
+    el.addEventListener("keydown", (e) => blokTusu(e, b, anahtar));
+
     return el;
+}
+
+// ---------- Klavyeyle blok kullanımı ----------
+// Fareyle yapılabilen her şeyin klavye karşılığı:
+//   Enter / Boşluk        → bloğu aç (düzenle penceresi)
+//   Delete / Backspace    → sil (tekrarlıysa önce sorar — fare yolundaki ile aynı soru)
+//   ↑ ↓                   → 15 dakika ileri / geri taşı
+//   ← →                   → bir gün geri / ileri taşı
+//   Shift + ↑ ↓           → süreyi 15 dakika kısalt / uzat
+// Not: ok tuşları normalde haftayı değiştiriyor (aşağıdaki genel kısayol).
+// Blok odaktayken o kısayola gitmesin diye burada stopPropagation var.
+function blokTusu(e, b, anahtar) {
+    // İÇERİDEKİ ÖĞELERE DOKUNMA.
+    // Ölçüldü (01.09.2026): "tamamlandı" kutucuğu odaktayken Enter'a basınca
+    // olay bloğa çıkıyor ve DÜZENLEME PENCERESİ açılıyordu; aynı yoldan
+    // Delete de bloğu silerdi. Yani klavye erişimini eklerken kutucuğu
+    // kullanılamaz hale getirmişiz. Fare yolunda bu koruma zaten vardı
+    // (mousedown içinde `e.target === kutucuk` denetimi) — klavyede de olmalı.
+    if (e.target !== e.currentTarget) return;
+
+    const tam = blokBul(anahtar, b.id);
+    if (!tam) return;
+
+    const bitir = () => { e.preventDefault(); e.stopPropagation(); };
+
+    if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+        bitir();
+        pencereAc(b.id);
+        return;
+    }
+
+    if (e.key === "Delete" || e.key === "Backspace") {
+        bitir();
+        if (tam.tekrarli && !confirm("Bu blok her hafta tekrar ediyor. Tamamen silinsin mi?")) return;
+        blokSil(anahtar, b.id);
+        bildirimGoster("🗑 Silindi: " + tam.metin);
+        ciz();
+        // Silinen bloğun odağı boşta kalmasın: takvim kutusuna dön.
+        const kutu = document.getElementById("takvimKutu");
+        if (kutu) { kutu.tabIndex = -1; kutu.focus(); }
+        return;
+    }
+
+    // Saatsiz ("boş vakitte") işlerin taşınacağı bir yeri yok
+    if (tam.gun < 0 || !tam.bas || !tam.bit) return;
+
+    const basDak = dakika(tam.bas);
+    const bitDak = dakika(tam.bit);
+    const sure = bitDak - basDak;
+    let yeniGun = tam.gun, yeniBas = basDak, yeniBit = bitDak;
+
+    if (e.shiftKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+        // Süreyi değiştir (en az 15 dk, gün sonunu aşmaz)
+        yeniBit = Math.max(basDak + 15, Math.min(1440, bitDak + (e.key === "ArrowDown" ? 15 : -15)));
+    } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        yeniBas = Math.max(0, Math.min(1440 - sure, basDak + (e.key === "ArrowDown" ? 15 : -15)));
+        yeniBit = yeniBas + sure;
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        yeniGun = Math.max(0, Math.min(6, tam.gun + (e.key === "ArrowRight" ? 1 : -1)));
+    } else {
+        return;
+    }
+    bitir();
+
+    if (yeniGun === tam.gun && yeniBas === basDak && yeniBit === bitDak) return;
+
+    blokGuncelle(anahtar, b.id, {
+        gun: yeniGun,
+        bas: dakToSaat(yeniBas),
+        bit: dakToSaat(yeniBit),
+        metin: tam.metin,
+        kategori: tam.kategori,
+        not: tam.not || ""
+    }, tam.tekrarli);
+    ciz();
+    bildirimGoster("↔ " + GUN_ADLARI[yeniGun] + " " + dakToSaat(yeniBas) + "–" + dakToSaat(yeniBit) +
+                   " · " + tam.metin);
+    blogaOdaklan(b.id);
+}
+
+// ciz() bütün blokları yeniden yaratır; odaktaki blok yok olur ve odak
+// gövdeye düşer. O yüzden taşımadan sonra aynı id'li yeni bloğa geri dönülür,
+// yoksa kullanıcı her ok tuşunda odağı kaybeder ve ikinci kez taşıyamaz.
+function blogaOdaklan(id) {
+    const yeni = document.querySelector('.blok[data-id="' + id + '"]');
+    if (yeni) yeni.focus();
 }
 
 // ---------- Sürükle: taşı / uzat ----------
