@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<!-- ARAMA MOTORUNA KAPALI.
+     Bu sayfa cekirdek sinamalarini kosan bir ARACTIR, icerik degil.
+     Bu depo KENDI kokunden yayinlaniyor ve .nojekyll var; yani depoya
+     giren her dosya canliya cikar. Sinama sayfasini izlemeye almak onu
+     yedekler AMA ayni anda /planlayici/sinama.html adresinde herkese
+     acar. Yedeklemek ile yayinlamak ayni dugmeye bagli.
+     noindex: arama sonuclarinda cikmasin. robots.txt'ye de eklendi.
+     NOT: noindex ERISIMI engellemez, DIZINLEMEYI engeller. Adresi
+     bilen acar -- ama burada sizacak veri yok, sayfa uygulamanin kendi
+     sinamalarini kosuyor. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Planlayıcı — çekirdek sınaması</title>
+<style>
+  body{margin:0;background:#14171c;color:#e8eaed;font:14px/1.6 system-ui;padding:18px}
+  h1{font-size:18px;margin:0 0 4px} p.alt{color:#98a2b3;margin:0 0 16px;font-size:13px}
+  .s{padding:6px 10px;border-radius:6px;margin:3px 0;background:#1e232b}
+  .ok{border-left:3px solid #35c08a} .yok{border-left:3px solid #e5484d;background:#2b1e20}
+  #ozet{padding:12px;border-radius:8px;margin:14px 0;font-weight:600}
+  .gecti{background:#16301f;color:#7fe0b0} .kaldi{background:#301818;color:#ff9ea1}
+  code{color:#c3cad6}
+</style>
+</head>
+<body>
+<h1>Çekirdek sınaması</h1>
+<p class="alt">Kendi <code>localStorage</code>'ını kullanır ve başta temizler —
+uygulamayla aynı adreste açma, planın silinir. Ölçüm için ayrı bir adresten aç.</p>
+<div id="ozet">yükleniyor…</div>
+<div id="liste"></div>
+
+<script>
+document.write('<scr'+'ipt src="cekirdek.js?t=' + Date.now() + '"><\/scr'+'ipt>');
+</script>
+
+<script>
+window.addEventListener("load", function () {
+  var sonuclar = [], hata = 0;
+  function ol(ad, kosul, ayrinti) {
+    if (!kosul) hata++;
+    sonuclar.push({ad: ad, gecti: !!kosul, ayrinti: ayrinti || ""});
+  }
+  function bosla() {
+    try { localStorage.clear(); } catch (e) {}
+    veri = { tekrarlayan: [], haftalar: {}, gunlukIz: {}, surum: 2 };
+  }
+  function yuzde(a) { var o = haftaOzeti(a); return o.toplam ? Math.round(o.biten / o.toplam * 100) : null; }
+
+  var gecen = haftaAnahtari(new Date(Date.now() - 7 * 86400000));
+  var bu    = haftaAnahtari(new Date());
+  var sonra = haftaAnahtari(new Date(Date.now() + 7 * 86400000));
+
+  // ── 1) TEKRARLAYAN İŞ GEÇMİŞİ DEĞİŞTİRMESİN (27.08.2026) ────────────
+  // Tekrarlayan işler global tutuluyordu, hafta filtresi yoktu. Bugün
+  // "her hafta spor" eklemek geçen haftayı %100'den %75'e düşürüyordu:
+  // o hafta hiç var olmayan bir iş, geriye dönük "yapılmamış" sayılıyordu.
+  bosla();
+  for (var i = 0; i < 3; i++)
+    blokEkle(gecen, { gun: i, metin: "iş" + i, bas: "09:00", bit: "10:00" }, false);
+  haftaKaydi(gecen).bloklar.forEach(function (b) { b.tamam = true; });
+  var oncekiYuzde = yuzde(gecen), oncekiDk = haftaOzeti(gecen).dakikaToplam;
+  blokEkle(bu, { gun: 0, metin: "her hafta spor", bas: "18:00", bit: "19:00" }, true);
+
+  ol("yeni tekrarlayan iş geçmiş haftanın yüzdesini değiştirmiyor",
+     yuzde(gecen) === oncekiYuzde, oncekiYuzde + " -> " + yuzde(gecen));
+  ol("yeni tekrarlayan iş geçmiş haftaya dakika eklemiyor",
+     haftaOzeti(gecen).dakikaToplam === oncekiDk,
+     oncekiDk + " -> " + haftaOzeti(gecen).dakikaToplam);
+  ol("tekrarlayan iş bu hafta görünüyor", haftaOzeti(bu).toplam === 1);
+  ol("tekrarlayan iş gelecek hafta da görünüyor", haftaOzeti(sonra).toplam === 1);
+
+  // ── 2) ESKİ KAYITLAR: BAŞLANGIÇ id'DEN GERİ KAZANILIYOR ─────────────
+  // id'nin ilk parçası Date.now().toString(36); tahmin değil, kaydın kendisi.
+  bosla();
+  var ikiHaftaOnce = Date.now() - 14 * 86400000;
+  veri.tekrarlayan.push({ id: ikiHaftaOnce.toString(36) + "abcde", gun: 0,
+                          bas: "08:00", bit: "09:00", metin: "eski", kategori: "genel" });
+  localStorage.setItem(KAYIT_ADI, JSON.stringify(veri));
+  yukle();
+  ol("eski tekrarlayan işin başlangıcı id'den çözülüyor",
+     veri.tekrarlayan[0].baslangic === haftaAnahtari(new Date(ikiHaftaOnce)),
+     String(veri.tekrarlayan[0].baslangic));
+  ol("çözülemeyen id 'her zaman' sayılıyor (eski davranış korunur)",
+     idHaftasi("xx") === null && idHaftasi(null) === null);
+
+  // ── 3) BAŞARISIZ YEDEK YÜKLEME VERİYİ SİLMESİN (27.08.2026) ─────────
+  // `veri = aday` göçürmeden ÖNCE çalışıyordu. Biçim denetimini geçip
+  // göçürmede çöken bir dosya, "geçersiz dosya" denmesine rağmen
+  // bellekteki planı siliyordu; ilk kaydet() de diske yazıyordu.
+  function veriDuruyorMu(h) {
+    return !!(veri.haftalar[h] && veri.haftalar[h].bloklar && veri.haftalar[h].bloklar.length);
+  }
+  var kotular = {
+    "göçürmeyi çökerten dosya": JSON.stringify({ haftalar: { "2026-W01": { gorevler: 5 } }, tekrarlayan: [] }),
+    "bozuk JSON": "{bu json değil",
+    "yanlış biçim": JSON.stringify({ selam: 1 })
+  };
+  Object.keys(kotular).forEach(function (ad) {
+    bosla();
+    blokEkle(bu, { gun: 0, metin: "ÖNEMLİ", bas: "09:00", bit: "10:00" }, false);
+    var d = iceAktar(kotular[ad]);
+    kaydet();   // kullanıcı herhangi bir şey yapmış gibi
+    var disk = JSON.parse(localStorage.getItem(KAYIT_ADI) || "{}");
+    ol("başarısız yükleme veriyi silmiyor — " + ad,
+       d === false && veriDuruyorMu(bu) &&
+       !!(disk.haftalar && disk.haftalar[bu] && disk.haftalar[bu].bloklar.length),
+       "döndü=" + d);
+  });
+  bosla();
+  blokEkle(bu, { gun: 0, metin: "eski", bas: "09:00", bit: "10:00" }, false);
+  ol("geçerli yedek hâlâ yükleniyor",
+     iceAktar(JSON.stringify({ haftalar: {}, tekrarlayan: [], surum: 2 })) === true &&
+     !veriDuruyorMu(bu));
+
+  // ── 4) SAYI ÇİZİMİN YAN ETKİSİ OLMASIN (08 Ders Programı'nda çıktı) ──
+  bosla();
+  blokEkle(bu, { gun: 0, metin: "a", bas: "09:00", bit: "10:00" }, true);
+  for (var j = 0; j < 3; j++) blokEkle(bu, { gun: j, metin: "t" + j, bas: "13:00", bit: "14:00" }, false);
+  haftaKaydi(bu).bloklar[0].tamam = true;
+  var tekrar = [];
+  for (var m = 0; m < 5; m++) { var o = haftaOzeti(bu); tekrar.push(o.toplam + "/" + o.biten + "/" + o.dakikaToplam); }
+  ol("aynı hafta 5 kez özetlenince sonuç sabit",
+     tekrar.every(function (x) { return x === tekrar[0]; }), tekrar[0]);
+
+  // ── 5) BOŞ HAFTADA SAYI UYDURMA ─────────────────────────────────────
+  bosla();
+  var b = haftaOzeti(bu);
+  ol("boş haftada toplam 0, yüzde hesaplanmıyor",
+     b.toplam === 0 && yuzde(bu) === null);
+  ol("özet alanları hep sonlu sayı",
+     [b.toplam, b.biten, b.dakikaToplam].every(Number.isFinite));
+
+  // ── Sonuç ───────────────────────────────────────────────────────────
+  try { localStorage.clear(); } catch (e) {}
+  document.getElementById("liste").innerHTML = sonuclar.map(function (s) {
+    return '<div class="s ' + (s.gecti ? "ok" : "yok") + '">' + (s.gecti ? "✓ " : "✗ ") +
+           s.ad + (s.ayrinti ? ' <code>' + s.ayrinti + '</code>' : '') + '</div>';
+  }).join("");
+  var oz = document.getElementById("ozet");
+  oz.className = hata ? "kaldi" : "gecti";
+  oz.textContent = hata ? hata + " SINAMA KALDI (" + sonuclar.length + " toplam)"
+                        : "TAMAM — " + sonuclar.length + " sınamanın hepsi geçti";
+  window.__sinama = { toplam: sonuclar.length, hata: hata, sonuclar: sonuclar };
+});
+</script>
+</body>
+</html>
