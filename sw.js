@@ -2,7 +2,7 @@
 // Uygulamayı çevrimdışı da çalıştırır: dosyaları önbelleğe alır.
 // Yeni sürüm çıkarınca SURUM'u artır ki herkese taze dosyalar gitsin.
 
-const SURUM = "planlayici-v20";
+const SURUM = "planlayici-v21";
 const DOSYALAR = [
     // ⚠️ BU LİSTE index.html'İ BİREBİR YANSITMALI.
     // Ölçüldü (27.08.2026, CANLIDA): index.html "cekirdek.js?v=19" istiyordu,
@@ -13,9 +13,10 @@ const DOSYALAR = [
     // `yayin_denetle.py` bunu artık denetliyor.
     "./",
     "./index.html",
-    "./stil.css?v=20",
-    "./cekirdek.js?v=20",
-    "./arayuz.js?v=20",
+    "./kurulum.js",
+    "./stil.css?v=21",
+    "./cekirdek.js?v=21",
+    "./arayuz.js?v=21",
     "./manifest.json",
     "./ikon-192.png",
     "./ikon-512.png",
