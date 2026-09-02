@@ -32,6 +32,35 @@ uygulamayla aynı adreste açma, planın silinir. Ölçüm için ayrı bir adres
 <div id="liste"></div>
 
 <script>
+/* YIKICI SINAMA KILIDI — 03.09.2026.
+   Bu sayfa localStorage.clear() cagiriyor. Ayni kaynakta oldugu icin
+   acan kisinin PLANLAYICI VERISINI siler: haftalik program, tekrarlayan
+   gorevler, gunluk iz.
+
+   Sayfa yayinda duruyor (yedeklenebilmesi icin izlemeye alindi) ve
+   noindex + robots ile dizin disi. AMA noindex ERISIMI engellemez --
+   adresi bilen, eski bir baglantiya tiklayan ya da merakla acan biri
+   verisini kaybederdi.
+
+   Artik yikici sinamalar yalnizca ACIKCA izin verilince kosar. */
+var sinamaIzinli = (function () {
+    var y = location.hostname;
+    if (y === 'localhost' || y === '127.0.0.1' || y === '') return true;
+    return location.search.indexOf('sinama=evet') >= 0;
+})();
+
+/* Silme cagrisinin KENDISI de sarilir: yukaridaki kilit bir gun
+   atlanirsa bile veri gitmesin. Iki kat koruma, cunku kaybin bedeli
+   geri alinamaz. */
+function sinamaTemizle() {
+    if (!sinamaIzinli) return;
+    /* Yalniz BURADA silinir. Sayfadaki oteki cagrilar bu isleve
+       yonlendirildi; kilit tek yerde durur, atlamak icin tek nokta
+       degil, hic nokta yok. */
+    try { window.localStorage.clear(); } catch (e) {}
+}
+</script>
+<script>
 document.write('<scr'+'ipt src="cekirdek.js?t=' + Date.now() + '"><\/scr'+'ipt>');
 </script>
 
@@ -43,7 +72,7 @@ window.addEventListener("load", function () {
     sonuclar.push({ad: ad, gecti: !!kosul, ayrinti: ayrinti || ""});
   }
   function bosla() {
-    try { localStorage.clear(); } catch (e) {}
+    sinamaTemizle();
     veri = { tekrarlayan: [], haftalar: {}, gunlukIz: {}, surum: 2 };
   }
   function yuzde(a) { var o = haftaOzeti(a); return o.toplam ? Math.round(o.biten / o.toplam * 100) : null; }
@@ -133,11 +162,20 @@ window.addEventListener("load", function () {
      [b.toplam, b.biten, b.dakikaToplam].every(Number.isFinite));
 
   // ── Sonuç ───────────────────────────────────────────────────────────
-  try { localStorage.clear(); } catch (e) {}
+  sinamaTemizle();
+  if (!sinamaIzinli) {
+    document.getElementById("liste").innerHTML =
+      '<div class="s yok">Bu sayfa yikici sinamalar kosar ve TARAYICI ' +
+      'VERINIZI SILER. Guvenlik icin canli adreste kapali.<br><br>' +
+      'Bilerek kosmak istiyorsaniz adresin sonuna <code>?sinama=evet</code> ' +
+      'ekleyin — ama once Planlayici verinizi kaybetmeyi goze aldiginizdan ' +
+      'emin olun.</div>';
+  } else {
   document.getElementById("liste").innerHTML = sonuclar.map(function (s) {
     return '<div class="s ' + (s.gecti ? "ok" : "yok") + '">' + (s.gecti ? "✓ " : "✗ ") +
            s.ad + (s.ayrinti ? ' <code>' + s.ayrinti + '</code>' : '') + '</div>';
   }).join("");
+  }
   var oz = document.getElementById("ozet");
   oz.className = hata ? "kaldi" : "gecti";
   oz.textContent = hata ? hata + " SINAMA KALDI (" + sonuclar.length + " toplam)"
