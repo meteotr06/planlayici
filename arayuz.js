@@ -204,8 +204,12 @@ document.getElementById("denemeEkleBtn").onclick = () => {
     const tarih = document.getElementById("dTarih").value || tarihAnahtari(new Date());
     const dogru = document.getElementById("dDogru").value;
     if (dogru === "") { alert("En azından doğru sayısını gir."); return; }
-    denemeEkle(ad, tarih, document.getElementById("dTur").value, dogru,
+    /* Hata donerse KAYDETME ve SOYLE. Onceden bozuk girdi sessizce
+       sifir sayiliyordu; kullanici "kaydedildi" yazisini gorup dogru
+       sandigi bir sayiyi deftere gecmis oluyordu. */
+    const denemeSonuc = denemeEkle(ad, tarih, document.getElementById("dTur").value, dogru,
                document.getElementById("dYanlis").value, document.getElementById("dBos").value);
+    if (denemeSonuc && denemeSonuc.hata) { alert(denemeSonuc.hata); return; }
     for (const id of ["dAd", "dDogru", "dYanlis", "dBos"]) document.getElementById(id).value = "";
     bildirimGoster("✔ Deneme kaydedildi, net hesaplandı.");
     ciz();

@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="ikon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="stylesheet" href="stil.css?v=22" />
+    <link rel="stylesheet" href="stil.css?v=23" />
 </head>
 <body>
     <header>
@@ -372,15 +372,15 @@
     </div>
 
     <!-- Önce çekirdek (mantık), sonra arayüz (görünüm) yüklenir -->
-    <script src="cekirdek.js?v=22"></script>
-    <script src="arayuz.js?v=22"></script>
+    <script src="cekirdek.js?v=23"></script>
+    <script src="arayuz.js?v=23"></script>
     <script>
         // Çevrimdışı çalışma (PWA): service worker'ı kaydet
         if ("serviceWorker" in navigator && location.protocol !== "file:") {
             navigator.serviceWorker.register("sw.js");
         }
     </script>
-<script src="kurulum.js?v=22"></script>
+<script src="kurulum.js?v=23"></script>
 <script>
 /* KURULUM DAVETI -- ortak modul: HESAP MAKINESI\ortak\kurulum.js
    Anahtar UYGULAMAYA OZEL: ortak anahtar olsaydi bir uygulamada

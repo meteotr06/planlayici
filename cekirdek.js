@@ -432,7 +432,34 @@ function sayiOku(girdi, tur) {
 }
 
 function denemeEkle(ad, tarih, tur, dogru, yanlis, bos) {
-    dogru = sayiOku(dogru) || 0; yanlis = sayiOku(yanlis) || 0; bos = sayiOku(bos) || 0;
+    /* OKUNAMAYAN GIRDI SIFIR DEGILDIR.
+       Onceki hali: `sayiOku(dogru) || 0`. Cozumleyici bozuk girdide
+       DOGRU davranip null donuyordu; `|| 0` onu sifira ceviriyordu.
+       Olculdu (03.09.2026, uygulama kullanilarak):
+           "12abc" -> dogru 0, net -1   (uyari YOK)
+           "1e3"   -> dogru 0
+           "-5"    -> dogru -5          (negatif soru sayisi!)
+       Bu bir ogrenci uygulamasi: 12 yazmak isteyip "12abc" yazan
+       ogrencinin defterine 0 yaziliyor ve ilerleme grafigi yanlis
+       ciziliyor. Uygulama calisiyor, sayi yanlis.
+
+       Ayni dosyadaki `hedefNetAyarla` yolu bu dersi ZATEN ogrenmisti
+       (okunamayan girdide hedefi degistirmiyor). Ders kardesine
+       tasinmamisti (K-69). */
+    var _d = sayiOku(dogru), _y = sayiOku(yanlis), _b = sayiOku(bos);
+    if (dogru !== "" && dogru != null && _d === null) {
+        return { hata: 'Doğru sayısı okunamadı: "' + dogru + '"' };
+    }
+    if (yanlis !== "" && yanlis != null && _y === null) {
+        return { hata: 'Yanlış sayısı okunamadı: "' + yanlis + '"' };
+    }
+    if (bos !== "" && bos != null && _b === null) {
+        return { hata: 'Boş sayısı okunamadı: "' + bos + '"' };
+    }
+    dogru = _d || 0; yanlis = _y || 0; bos = _b || 0;
+    if (dogru < 0 || yanlis < 0 || bos < 0) {
+        return { hata: 'Soru sayısı eksi olamaz.' };
+    }
     const net = tur === "LGS" ? dogru - yanlis / 3 : dogru - yanlis / 4;
     veri.denemeler.push({
         id: benzersizId(), ad: (ad || "Deneme").trim(), tarih, tur,
@@ -440,6 +467,7 @@ function denemeEkle(ad, tarih, tur, dogru, yanlis, bos) {
     });
     veri.denemeler.sort((a, b) => a.tarih.localeCompare(b.tarih));
     kaydet();
+    return { tamam: true };
 }
 
 function denemeSil(id) {
