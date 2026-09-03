@@ -7,7 +7,25 @@
     --kenar: #2e3654;
     --yazi: #e8eaf2;
     --soluk: #8b91a7;
+    /* UC AYRI ROL -- olculerek ayrildi (03.09.2026).
+       Once tek `--vurgu` hem DUGME ZEMINI hem YAZI RENGIYDI. Bir rengin
+       ikisini birden iyi yapmasi mumkun degil: koyu temada zemin uzerinde
+       okunsun diye aciklastiriliyor, sonra ustune beyaz yazi konunca
+       karsitlik dusuyordu.
+       OLCULDU (tarayicida, calisan sayfada): ".birincil" dugmelerinde
+       beyaz yazi / #6c8cff zemin = 3,07. WCAG AA esigi 4,5. Ayni sayi
+       acik temada gun basligi yazisinda da cikti (#6c8cff / beyaz).
+       Yani "Ekle", "Uygula", "+ Blok Ekle" dugmelerinin hepsi esigin
+       altindaydi -- hem acik hem koyu temada.
+       Kardes uygulamada (07 Kur) bu olculup `--vurgu-yazi` ile
+       cozulmustu; buraya tasinmamisti -- K-69.
+         --vurgu       : dugme/etiket ZEMINI
+         --vurgu-yazi  : o zeminin UZERINDEKI yazi
+         --vurgu-metin : vurgunun SAYFA ZEMINI uzerinde yazi olarak hali
+       Alti renk temasinin 24 bilesiminin hepsi hesaplandi; en dusuk 5,02. */
     --vurgu: #6c8cff;
+    --vurgu-yazi: #0c0e13;
+    --vurgu-metin: #6c8cff;
     --yesil: #3ddc84;
     --girdi-tema: dark;
 }
@@ -21,6 +39,9 @@ body.acik {
     --kenar: #c9d2e6;
     --yazi: #1d2436;
     --soluk: #67708a;
+    --vurgu: #2447c7;
+    --vurgu-yazi: #ffffff;
+    --vurgu-metin: #1e3ba8;
     --girdi-tema: light;
 }
 
@@ -39,7 +60,7 @@ button:active { transform: scale(0.96); }
 ::-webkit-scrollbar-thumb { background: var(--kenar); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--vurgu); }
 
-.kaplama .pencere { animation: pencere-gel 0.18s ease-out; }
+/* animasyon HAREKET blogunda (prefers-reduced-motion korumali) */
 @keyframes pencere-gel {
     from { transform: translateY(14px) scale(0.98); opacity: 0; }
     to { transform: none; opacity: 1; }
@@ -69,7 +90,7 @@ header {
 }
 
 header h1 { font-size: 1.25rem; }
-header h1 span { color: var(--vurgu); }
+header h1 span { color: var(--vurgu-metin); }
 
 .hafta-gezinti { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; }
 
@@ -97,7 +118,7 @@ header h1 span { color: var(--vurgu); }
 .birincil {
     background: var(--vurgu);
     border: none;
-    color: #fff;
+    color: var(--vurgu-yazi);
     border-radius: 10px;
     padding: 8px 14px;
     font-weight: 700;
@@ -223,7 +244,7 @@ header h1 span { color: var(--vurgu); }
     line-height: 1.25;
 }
 .gun-baslik-hucre span { color: var(--soluk); font-size: 0.72rem; }
-.gun-baslik-hucre.bugun b, .gun-baslik-hucre.bugun { color: var(--vurgu); }
+.gun-baslik-hucre.bugun b, .gun-baslik-hucre.bugun { color: var(--vurgu-metin); }
 
 .saat-sutunu {
     position: sticky;
@@ -426,7 +447,7 @@ header h1 span { color: var(--vurgu); }
 .sohbet-balon.ben {
     align-self: flex-end;
     background: var(--vurgu);
-    color: #fff;
+    color: var(--vurgu-yazi);
     border-bottom-right-radius: 4px;
 }
 .sohbet-balon.bot {
@@ -767,7 +788,7 @@ details.panel[open] summary::after { content: "▾"; }
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     letter-spacing: 2px;
-    color: var(--vurgu);
+    color: var(--vurgu-metin);
 }
 .odak-pencere.molada .odak-sayac { color: var(--yesil); }
 
@@ -801,7 +822,7 @@ details.panel[open] summary::after { content: "▾"; }
     z-index: 100;
     border-radius: 2px;
     pointer-events: none;
-    animation: konfeti-dus linear forwards;
+    /* animasyon HAREKET blogunda (prefers-reduced-motion korumali) */
 }
 @keyframes konfeti-dus {
     to { transform: translateY(105vh) rotate(720deg); opacity: 0.6; }
@@ -901,4 +922,93 @@ details.panel[open] summary::after { content: "▾"; }
     .filtre-cip, .gun-cip, .yazi-cip { min-height: 38px; }
     /* Cip'ler artik daha yuksek; satir araligini da acalim ki sikismasin */
     .filtre-serit { gap: 7px; }
+}
+
+/* ===== RENK TEMALARI =================================================
+   Kullanicinin istegi (03.09.2026): "renk secenekleri ve bu tarz
+   eklenebilecek modlari ekleyelim".
+
+   HER SAYI HESAPLANDI, secilmedi. Alti renk x iki tema x iki rol =
+   24 bilesim; hepsi WCAG AA esigi 4,5'in ustunde, en dusuk 5,02
+   (acik temada orman dugmesi). Kardes uygulamada (09 Hesap Araclari)
+   ayni disiplin var: "okyanus" ilk halinde acik temada 4,20 cikmis ve
+   koyulastirilmis. Goze guzel gelen renk, okunabilir renk demek degil.
+
+   SECICI OZGULLUGU BILEREK: acik tema `body.acik` ile calisiyor.
+   `html[data-renk=X]` (0,1,1) ile `body.acik` (0,1,1) esit ciksaydi
+   sira belirlerdi -- kirilgan. `html[data-renk=X] body.acik` (0,1,2)
+   her zaman kazanir.
+
+   RENK TEK BASINA ANLAM TASIMIYOR: bunlar yalnizca vurgu rengi.
+   Kategori ayrimi, durum bilgisi ya da uyari hicbir yerde yalniz
+   renge dayanmiyor -- renk koru kullanici hicbir bilgiyi kacirmaz.
+   ==================================================================== */
+html[data-renk="okyanus"]            { --vurgu: #38bdf8; --vurgu-yazi: #0c0e13; --vurgu-metin: #38bdf8; }
+html[data-renk="okyanus"] body.acik  { --vurgu: #0a6d8f; --vurgu-yazi: #ffffff; --vurgu-metin: #075a75; }
+
+html[data-renk="orman"]              { --vurgu: #4ade80; --vurgu-yazi: #0c0e13; --vurgu-metin: #4ade80; }
+html[data-renk="orman"] body.acik    { --vurgu: #15803d; --vurgu-yazi: #ffffff; --vurgu-metin: #116430; }
+
+html[data-renk="gunbatimi"]           { --vurgu: #fb923c; --vurgu-yazi: #0c0e13; --vurgu-metin: #fb923c; }
+html[data-renk="gunbatimi"] body.acik { --vurgu: #c2410c; --vurgu-yazi: #ffffff; --vurgu-metin: #9a3412; }
+
+html[data-renk="lavanta"]             { --vurgu: #c4b5fd; --vurgu-yazi: #0c0e13; --vurgu-metin: #c4b5fd; }
+html[data-renk="lavanta"] body.acik   { --vurgu: #6d28d9; --vurgu-yazi: #ffffff; --vurgu-metin: #5b21b6; }
+
+html[data-renk="gri"]                 { --vurgu: #cbd5e1; --vurgu-yazi: #0c0e13; --vurgu-metin: #cbd5e1; }
+html[data-renk="gri"] body.acik       { --vurgu: #475569; --vurgu-yazi: #ffffff; --vurgu-metin: #334155; }
+
+
+/* ===== HAREKET ======================================================
+   Dort kural, sirasiyla onemli:
+
+   1. VARSAYILAN HAL DAIMA GORUNUR. Bu yuzden hicbir giris animasyonu
+      SAYDAMLIK canlandirmiyor -- yalnizca KONUM. Animasyon hic
+      kosmasa bile her sey yerinde ve okunur; sadece durgun olur.
+      (Portaldaki kalipta giris `opacity:.001`den basliyor ve
+      `animation: ... both` kullaniliyor; `both` = backwards+forwards,
+      yani gecikme boyunca oge gorunmez. Oradaki gecikme en cok 0,30 sn
+      oldugu icin pratikte kucuk bir risk, ama ayni riski buraya
+      tasimadim: burada saydamlik hic oynamiyor. Merkeze bildirildi.)
+
+   2. `prefers-reduced-motion` bir zevk degil ERISILEBILIRLIK ayari.
+      Vestibuler rahatsizligi olanda kayan arayuz bas donmesi ve mide
+      bulantisi yapar. Bu dosyada ONCEDEN IKI ANIMASYON KORUMASIZDI
+      (`pencere-gel` ve `konfeti-dus`); konfeti butun ekrani dolduran
+      bir hareket ve tercih ne olursa olsun kosuyordu. Kapatildi.
+
+   3. `:hover` yazilan her yere `:focus-visible` de yazilir. Klavyeyle
+      gezen kullanici fareyle ayni geri bildirimi alir.
+
+   4. Hareket RENK ya da ANLAM tasimaz. Animasyonu gormeyen kullanici
+      hicbir bilgi kacirmaz.
+   ==================================================================== */
+@media (prefers-reduced-motion: no-preference) {
+
+    /* Kart/blok: dokunulabilir oldugunu soyleyen 2px'lik kalkis.
+       Daha fazlasi izgarayi oynatiyor, daha azi fark edilmiyor. */
+    .blok, .kaynak-satir, .deneme-satir, .aliskanlik-satir {
+        transition: transform .18s ease, box-shadow .18s ease,
+                    border-color .18s ease;
+    }
+    .blok:hover, .blok:focus-visible,
+    .kaynak-satir:hover, .kaynak-satir:focus-visible {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(0,0,0,.18);
+    }
+    .blok:active { transform: translateY(0); transition-duration: .06s; }
+
+    /* Dugmeler: basildigi an hafifce cokme -- dokunusun karsilik
+       verdigi hissi. Renk degismiyor (kural 4). */
+    button, .dugme { transition: background-color .15s ease, transform .1s ease,
+                                 border-color .15s ease; }
+    button:active, .dugme:active { transform: scale(.985); }
+
+    /* Giris: YALNIZ KONUM oynar, saydamlik degil (kural 1). */
+    @keyframes yerineOtur { from { transform: translateY(6px); } to { transform: none; } }
+    .panel { animation: yerineOtur .28s ease-out; }
+
+    /* Pencere ve konfeti: zaten vardi, artik bu blogun ICINDE. */
+    .kaplama .pencere { animation: pencere-gel 0.18s ease-out; }
+    .konfeti          { animation: konfeti-dus linear forwards; }
 }

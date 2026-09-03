@@ -1544,6 +1544,16 @@ document.getElementById("kaynakEkleBtn").onclick = () => {
 let konfetiPatladiMi = false; // aynı gün bir kez patlasın
 
 function konfetiPatlat() {
+    /* HAREKET KAPALIYSA HIC YARATMA.
+       CSS tarafinda animasyon zaten `prefers-reduced-motion` icinde,
+       yani parcalar ekran disinda (`top:-12px`) kalir ve gorunmez --
+       yani gorsel olarak zaten dogru. Ama o durumda 80 DOM ogesi
+       bosuna yaratilip 3,5 saniye duruyordu. Tercihi belirtmis
+       kullaniciya hicbir sey gostermeyecegiz; olusturmayalim da. */
+    try {
+        if (window.matchMedia &&
+            window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    } catch (e) { }
     const renkler = ["#6c8cff", "#3ddc84", "#ffb84d", "#ff8fa3", "#4dd6ff", "#ffd94d"];
     for (let i = 0; i < 80; i++) {
         const parca = document.createElement("div");
@@ -1666,15 +1676,61 @@ document.getElementById("aVeriSil").onclick = () => {
 };
 
 // ---------- 🌗 Tema ve görünüm düğmeleri ----------
+const RENKLER = ["", "okyanus", "orman", "gunbatimi", "lavanta", "gri"];
+
+/* VURGU RENGI -- kullanicinin istegi (03.09.2026).
+   Alti secenek; her birinin acik ve koyu temadaki hali AYRI ve
+   karsitligi hesaplanmis (bkz. stil.css "RENK TEMALARI"). Renk
+   yalnizca vurgudur: hicbir yerde tek basina anlam tasimaz. */
+function renkUygula() {
+    const r = depoOku("renk");
+    const gecerli = RENKLER.indexOf(r) >= 0 ? r : "";
+    if (gecerli) document.documentElement.dataset.renk = gecerli;
+    else delete document.documentElement.dataset.renk;
+    const alan = document.getElementById("aRenk");
+    if (alan) alan.value = gecerli;
+}
+
 function temaUygula() {
-    const acik = depoOku("tema") === "acik";
+    /* SECIM YOKSA CIHAZI DINLE -- varsayilan diske YAZILMAZ.
+       Onceki hali `depoOku("tema") === "acik"` idi; kayit yoksa
+       KOYU varsayiliyordu. Cihazi acik kipte olan kullanici
+       uygulamayi koyu goruyordu ve hicbir sey secmemisti.
+       Kardes uygulamada (07 Kur) olculup duzeltilmis bir ders:
+       "varsayilan, secim gibi diske yazilmamali" -- kaydin,
+       anlattigi seyden uzun yasamasi. Buraya tasinmamisti (K-69).
+       Kullanici bir kez secerse artik cihaz dinlenmez: SECIM KUTSAL. */
+    const kayit = depoOku("tema");
+    let acik;
+    if (kayit === "acik" || kayit === "koyu") {
+        acik = kayit === "acik";
+    } else {
+        acik = !!(window.matchMedia &&
+                  window.matchMedia("(prefers-color-scheme: light)").matches);
+    }
     document.body.classList.toggle("acik", acik);
     document.getElementById("temaBtn").textContent = acik ? "🌙" : "☀️🌙";
     document.getElementById("temaBtn").title = acik ? "Koyu temaya geç" : "Açık temaya geç";
 }
 
+const _renkAlan = document.getElementById("aRenk");
+if (_renkAlan) _renkAlan.onchange = () => {
+    depoYaz("renk", _renkAlan.value);
+    renkUygula();
+};
+renkUygula();
+
 document.getElementById("temaBtn").onclick = () => {
-    depoYaz("tema", depoOku("tema") === "acik" ? "koyu" : "acik");
+    /* GORUNEN halden cevir, DEPODAN degil.
+       Sistem tercihini dinlemeye baslayinca burasi bozuldu ve
+       yakaladim: secim yokken cihaz acik kipteyse kullanici ACIK
+       goruyor, ama `depoOku("tema")` null donuyordu; null !== "acik"
+       oldugu icin dugme "acik" yaziyordu -- yani ILK TIKLAMA HICBIR
+       SEYI DEGISTIRMIYORDU. Kullanici dugmenin bozuk oldugunu sanardi.
+       Varsayilani degistirmek, ona bagli her yeri yeniden dusunmeyi
+       gerektiriyor. */
+    const suAnAcik = document.body.classList.contains("acik");
+    depoYaz("tema", suAnAcik ? "koyu" : "acik");
     temaUygula();
 };
 

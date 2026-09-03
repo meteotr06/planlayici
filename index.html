@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="ikon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="stylesheet" href="stil.css?v=24" />
+    <link rel="stylesheet" href="stil.css?v=25" />
 </head>
 <body>
     <header>
@@ -345,6 +345,16 @@
                     <option value="120">2 saat</option>
                 </select>
             </label>
+            <label class="alan">🎨 Vurgu rengi
+                <select id="aRenk">
+                    <option value="">Varsayılan (mavi)</option>
+                    <option value="okyanus">Okyanus</option>
+                    <option value="orman">Orman</option>
+                    <option value="gunbatimi">Gün batımı</option>
+                    <option value="lavanta">Lavanta</option>
+                    <option value="gri">Gri</option>
+                </select>
+            </label>
             <label class="tekrar-kutu"><input id="aSes" type="checkbox" />🔊 Pomodoro bitiş sesi çalsın</label>
             <div class="panel-bos">Tema (☀️🌙), görünüm (📋/🗓️) ve bildirim (🔔) ayarları üst bardaki düğmelerde.</div>
             <button id="aVeriSil" class="tehlike">🗑️ Tüm verileri sıfırla</button>
@@ -372,15 +382,15 @@
     </div>
 
     <!-- Önce çekirdek (mantık), sonra arayüz (görünüm) yüklenir -->
-    <script src="cekirdek.js?v=24"></script>
-    <script src="arayuz.js?v=24"></script>
+    <script src="cekirdek.js?v=25"></script>
+    <script src="arayuz.js?v=25"></script>
     <script>
         // Çevrimdışı çalışma (PWA): service worker'ı kaydet
         if ("serviceWorker" in navigator && location.protocol !== "file:") {
             navigator.serviceWorker.register("sw.js");
         }
     </script>
-<script src="guncelle.js?v=24"></script>
+<script src="guncelle.js?v=25"></script>
 <script>
 /* TESLIMAT: duzeltme KURULU ogrenciye iniyor mu?
    Olculdu: `skipWaiting` + `clients.claim` var ama
@@ -393,7 +403,7 @@
    girdigi her seyi siler. Serit cikar, basma karari onun. */
 try { new Guncelle({ dakika: 30, otomatik: false }); } catch (e) {}
 </script>
-<script src="kurulum.js?v=24"></script>
+<script src="kurulum.js?v=25"></script>
 <script>
 /* KURULUM DAVETI -- ortak modul: HESAP MAKINESI\ortak\kurulum.js
    Anahtar UYGULAMAYA OZEL: ortak anahtar olsaydi bir uygulamada
