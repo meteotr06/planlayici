@@ -113,6 +113,73 @@
             goster();
         });
 
+
+    /* ---- RENK CIFTI: YAZI, ZEMINDEN TURETILIR ----------------------
+       Ilk hali zemini `var(--kart,#fff)`, yaziyi `var(--yazi,#111)`
+       aliyordu. IKI YEDEK BIRBIRINDEN BAGIMSIZDI: sayfada `--yazi`
+       tanimli ama `--kart` tanimsizsa zemin #fff'e duser, yazi ise
+       sayfanin rengini alir -- koyu temada BEYAZ. Sonuc BEYAZ USTUNE
+       BEYAZ, karsitlik 1:1. Serit ciziliyor, metin orada, kullanici
+       hicbir sey goremiyor. Sessiz kusur: ne hata verir ne bos gorunur.
+
+       Olculdu (03.09.2026, gercek tarayici):
+           hava, muhasebe, portal -> `--kart` TANIMSIZ, `--yazi` #ffffff
+
+       ILK DUZELTMEM DE YETMEDI, yaziyorum: sayfanin kendi calisan
+       ciftini almayi denedim (`body`nin zemin+yazi rengi). Olctum:
+       hava'da `body` ve `html` arka plani `rgba(0,0,0,0)` -- SAYDAM.
+       Zincir yine #fff'e dusuyordu. "Sayfadan sor" cozumu, sayfanin
+       cevabi olduguu VARSAYIMINA dayaniyordu.
+
+       DOGRUSU SORMAK DEGIL HESAPLAMAK: zemin ne olursa olsun, yazi
+       rengi onun PARLAKLIGINDAN turetilir. Boylece cift, varsayimla
+       degil KURULUM GEREGI okunur olur. Sayfa hicbir degisken
+       tanimlamasa da calisir.
+
+       WCAG goreli parlaklik esigi 0,179'dur: bundan acik zeminde koyu
+       yazi, koyuda acik yazi en yuksek karsitligi verir. Ikisi de
+       AA'yi (4,5) rahatlikla gecer. */
+    function _rgb(renk) {
+        renk = (renk || '').trim();
+        var m = renk.match(/^#([0-9a-f]{3})$/i);
+        if (m) return m[1].split('').map(function (h) { return parseInt(h + h, 16); });
+        m = renk.match(/^#([0-9a-f]{6})$/i);
+        if (m) return [0, 2, 4].map(function (i) { return parseInt(m[1].substr(i, 2), 16); });
+        m = renk.match(/rgba?\(([^)]+)\)/i);
+        if (m) {
+            var p = m[1].split(',').map(function (x) { return parseFloat(x); });
+            if (p.length > 3 && p[3] === 0) return null;      /* saydam */
+            return [p[0], p[1], p[2]];
+        }
+        return null;
+    }
+    function _parlaklik(renk) {
+        var r = _rgb(renk);
+        if (!r) return null;
+        var v = r.map(function (x) {
+            x = x / 255;
+            return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+    }
+    function renkCifti() {
+        var kok = getComputedStyle(document.documentElement);
+        var zemin = '';
+        /* Sayfanin kart/panel yuzeyini ara; ilk OPAK olani al. */
+        ['--kart', '--panel', '--yuzey', '--zemin2', '--zemin'].some(function (ad) {
+            var v = (kok.getPropertyValue(ad) || '').trim();
+            if (v && _parlaklik(v) !== null) { zemin = v; return true; }
+            return false;
+        });
+        if (!zemin) {
+            var g = getComputedStyle(document.body).backgroundColor;
+            if (_parlaklik(g) !== null) zemin = g;
+        }
+        if (!zemin) zemin = '#ffffff';
+        var p = _parlaklik(zemin);
+        return { zemin: zemin, yazi: (p === null || p > 0.179) ? '#111111' : '#f5f5f5' };
+    }
+
         function goster() {
             /* `serit` DOLU AMA SAYFADA OLMAYABILIR.
                Sinamada ortaya cikti: baska bir kod seridi DOM'dan
@@ -124,12 +191,13 @@
             serit = document.createElement('div');
             serit.setAttribute('role', 'status');
             serit.setAttribute('aria-live', 'polite');
+            var _c = renkCifti();
             serit.style.cssText =
                 'position:fixed;left:12px;right:12px;bottom:12px;z-index:950;' +
                 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;' +
                 'padding:12px 14px;border-radius:14px;max-width:640px;' +
                 'margin:0 auto;font:inherit;' +
-                'background:var(--kart,#fff);color:var(--yazi,#111);' +
+                'background:' + _c.zemin + ';color:' + _c.yazi + ';' +
                 'border:1px solid var(--cizgi,#ddd);' +
                 'box-shadow:0 8px 30px rgba(0,0,0,.28);';
 
