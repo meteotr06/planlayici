@@ -66,6 +66,41 @@ document.write('<scr'+'ipt src="cekirdek.js?t=' + Date.now() + '"><\/scr'+'ipt>'
 
 <script>
 window.addEventListener("load", function () {
+  /* KILIT EN BASTA -- yarim kalmis bir duzeltmenin tamamlanmasi.
+
+     Dun gece (02.09.2026) bu sayfaya kilit koydum ama YANLIS YERE:
+     yalnizca `sinamaTemizle()`ye ve SONUC EKRANINA. Sinamalarin
+     GOVDESI kosulsuz kosmaya devam ediyordu.
+
+     Olculdu (03.09.2026, yayin oncesi denetimde):
+         sinama.html:109  localStorage.setItem(KAYIT_ADI, ...)
+         cekirdek.js:5    const KAYIT_ADI = "haftalikPlanVerisi"
+     Yani sayfa, GERCEK uygulamanin anahtarina sahte sinama verisi
+     YAZIYORDU. Ogrencinin haftalik plani siliniyor degil, EZILIYORDU --
+     ve ekranda "canli adreste kapali" yaziyordu. Yalan.
+
+     Bu, dun gece silinen veriden bir bakima daha kotu: silinme belli
+     olur, sahte veriyle ezilme belli olmaz.
+
+     DERS: bir kilit, korumak istedigin seyin ONUNE konur; yan
+     etkilerinin onune degil. Ben cikti tarafini kilitleyip girdi
+     tarafini acik birakmisim.
+
+     Artik izin yoksa TEK BIR SINAMA BILE KOSMUYOR. */
+  if (!sinamaIzinli) {
+    var k = document.getElementById("liste");
+    if (k) {
+      k.innerHTML =
+        '<div class="s yok">Bu sayfa yikici sinamalar kosar ve ' +
+        'Planlayici verinizin UZERINE YAZAR. Guvenlik icin canli ' +
+        'adreste hic calistirilmiyor.<br><br>' +
+        'Bilerek kosmak istiyorsaniz adresin sonuna ' +
+        '<code>?sinama=evet</code> ekleyin -- ama once Planlayici ' +
+        'verinizi kaybetmeyi goze aldiginizdan emin olun.</div>';
+    }
+    return;                       /* GOVDE HIC CALISMAZ */
+  }
+
   var sonuclar = [], hata = 0;
   function ol(ad, kosul, ayrinti) {
     if (!kosul) hata++;
