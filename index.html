@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="ikon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="stylesheet" href="stil.css?v=26" />
+    <link rel="stylesheet" href="stil.css?v=27" />
 </head>
 <body>
     <header>
@@ -382,15 +382,15 @@
     </div>
 
     <!-- Önce çekirdek (mantık), sonra arayüz (görünüm) yüklenir -->
-    <script src="cekirdek.js?v=26"></script>
-    <script src="arayuz.js?v=26"></script>
+    <script src="cekirdek.js?v=27"></script>
+    <script src="arayuz.js?v=27"></script>
     <script>
         // Çevrimdışı çalışma (PWA): service worker'ı kaydet
         if ("serviceWorker" in navigator && location.protocol !== "file:") {
             navigator.serviceWorker.register("sw.js");
         }
     </script>
-<script src="guncelle.js?v=26"></script>
+<script src="guncelle.js?v=27"></script>
 <script>
 /* TESLIMAT: duzeltme KURULU ogrenciye iniyor mu?
    Olculdu: `skipWaiting` + `clients.claim` var ama
@@ -403,7 +403,7 @@
    girdigi her seyi siler. Serit cikar, basma karari onun. */
 try { new Guncelle({ dakika: 30, otomatik: false }); } catch (e) {}
 </script>
-<script src="kurulum.js?v=26"></script>
+<script src="kurulum.js?v=27"></script>
 <script>
 /* KURULUM DAVETI -- ortak modul: HESAP MAKINESI\ortak\kurulum.js
    Anahtar UYGULAMAYA OZEL: ortak anahtar olsaydi bir uygulamada

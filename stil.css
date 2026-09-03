@@ -26,7 +26,31 @@
     --vurgu: #6c8cff;
     --vurgu-yazi: #0c0e13;
     --vurgu-metin: #6c8cff;
-    --yesil: #3ddc84;
+    --yesil: #3ddc84;          /* CUBUK/ISARET zemini olarak */
+    /* DURUM RENKLERI DEGISKENE BAGLANDI -- olculerek (03.09.2026).
+       Bunlar dosyada SABIT HEX olarak duruyordu ve ACIK TEMA
+       KARSILIKLARI YOKTU. Uygulama koyu-once tasarlanmis; acik temada
+       ayni renkler acik zemine dusuyor ve okunmuyor.
+       CALISAN UYGULAMADA OLCULDU, acik tema:
+         #seviye  (XP gostergesi)      1,22   <- neredeyse gorunmez
+         .soru-sayi.hedef-tamam        1,22
+         #seri                         1,82
+         .hedef-rozet.acil             1,41
+         .hedef-rozet.uzak             1,47
+         .ist-kiyas .arti (--yesil)    1,58
+       Esik 4,5. Bu sabah `--vurgu`yu (3,07) duzeltmistim ama BUNLARA
+       BAKMAMISTIM -- "duzelttim" demek, ayni sinifin oteki orneklerini
+       kapattim demek degil (K-28).
+       Yeni degerler hesaplandi, secilmedi: 7 degisken x 2 tema, rozetlerin
+       SAYDAM dolgusu opak zeminle karistirilarak. En dusuk 5,09.
+       KOYU TEMA DEGERLERI DEGISMEDI -- yalniz acik tema kazandi. */
+    --yesil-metin: #3ddc84;    /* YAZI olarak; cubuk zeminiyle ayni rol degil */
+    --durum-acil: #ff8a8a;
+    --durum-yakin: #ffb84d;
+    --durum-uzak: #9ab0ff;
+    --sil: #ff6b6b;
+    --seri: #ff9d4d;
+    --seviye: #ffd94d;
     --girdi-tema: dark;
 }
 
@@ -38,7 +62,20 @@ body.acik {
     --cizgi: #dde3f0;
     --kenar: #c9d2e6;
     --yazi: #1d2436;
-    --soluk: #67708a;
+    /* SOLUK METIN KOYULASTIRILDI (03.09.2026, olculdu).
+       #67708a acik temada: --arka uzerinde 4,36 · --kart-acik uzerinde
+       4,21 -- ikisi de esik 4,5'in ALTINDA. Yalniz beyaz kart uzerinde
+       (4,93) geciyordu, yani "bazi yerlerde geciyor" hali kusuru
+       gizliyordu. Koyu temadaki #8b91a7 uc zeminde de geciyor,
+       DOKUNULMADI. Yenisi: --arka 5,21 · --kart 5,89 · --kart-acik 5,03. */
+    --soluk: #5b647d;
+    --yesil-metin: #137034;
+    --durum-acil: #b91c1c;
+    --durum-yakin: #92400e;
+    --durum-uzak: #1e3ba8;
+    --sil: #b91c1c;
+    --seri: #9a3412;
+    --seviye: #854d0e;
     --vurgu: #2447c7;
     --vurgu-yazi: #ffffff;
     --vurgu-metin: #1e3ba8;
@@ -113,7 +150,7 @@ header h1 span { color: var(--vurgu-metin); }
 /* 11 dugme dar ekranda tek satira sigmiyordu; sarsin ki sayfa tasmasin */
 .sag-grup { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; }
 #ozet { color: var(--soluk); font-size: 0.88rem; }
-#ozet b { color: var(--yesil); }
+#ozet b { color: var(--yesil-metin); }
 
 .birincil {
     background: var(--vurgu);
@@ -370,7 +407,14 @@ header h1 span { color: var(--vurgu-metin); }
 .panel-bos { color: var(--soluk); font-size: 0.78rem; line-height: 1.4; }
 
 /* 🤖 Asistan */
+/* ASISTAN PANELI -- acik temada KOYU zemin uzerinde KOYU yazi kaliyordu.
+   OLCULDU (calisan uygulama, acik tema): 1,01. Yani panelin butun
+   yazisi neredeyse gorunmezdi. Koyu tema saglamdi (12,79) -- kusur
+   yalnizca acik temada vardi ve gecisli zemin oldugu icin basit bir
+   renk aramasiyla da bulunmuyordu.
+   Acik tema icin ayri gecis verildi; yazi 12,90, soluk metin 5,03. */
 .panel.asistan { border-color: #3a4370; background: linear-gradient(160deg, #1d2340, #1a1f33); }
+body.acik .panel.asistan { border-color: #c3ccea; background: linear-gradient(160deg, #eef2ff, #e4eaff); }
 
 .brifing {
     background: rgba(108, 140, 255, 0.12);
@@ -488,8 +532,8 @@ header h1 span { color: var(--vurgu-metin); }
 .ist-deger { color: var(--soluk); text-align: right; font-size: 0.72rem; }
 
 .ist-kiyas { color: var(--soluk); font-size: 0.76rem; margin-top: 2px; }
-.ist-kiyas .arti { color: var(--yesil); }
-.ist-kiyas .eksi { color: #ffb84d; }
+.ist-kiyas .arti { color: var(--yesil-metin); }
+.ist-kiyas .eksi { color: var(--durum-yakin); }
 
 .tamamlanma { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
 .tamamlanma-ust { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--soluk); }
@@ -511,16 +555,16 @@ header h1 span { color: var(--vurgu-metin); }
     padding: 3px 8px;
     white-space: nowrap;
 }
-.hedef-rozet.acil  { background: rgba(255, 82, 82, 0.2);  color: #ff8a8a; }
-.hedef-rozet.yakin { background: rgba(255, 184, 77, 0.18); color: #ffb84d; }
-.hedef-rozet.uzak  { background: rgba(108, 140, 255, 0.18); color: #9ab0ff; }
+.hedef-rozet.acil  { background: rgba(255, 82, 82, 0.2);  color: var(--durum-acil); }
+.hedef-rozet.yakin { background: rgba(255, 184, 77, 0.18); color: var(--durum-yakin); }
+.hedef-rozet.uzak  { background: rgba(108, 140, 255, 0.18); color: var(--durum-uzak); }
 .hedef-rozet.gecti { background: var(--arka); color: var(--soluk); text-decoration: line-through; }
 
 .hedef-ad { flex: 1; font-size: 0.82rem; display: flex; flex-direction: column; line-height: 1.3; }
 .hedef-ad small { color: var(--soluk); font-size: 0.7rem; }
 
 .hedef-sil { background: none; border: none; color: var(--soluk); font-size: 0.85rem; }
-.hedef-sil:hover { color: #ff6b6b; }
+.hedef-sil:hover { color: var(--sil); }
 
 .hedef-ekle { display: flex; flex-direction: column; gap: 6px; }
 .hedef-ekle-alt { display: flex; gap: 6px; }
@@ -554,7 +598,7 @@ header h1 span { color: var(--vurgu-metin); }
 .cip-yazi { flex: 1; word-break: break-word; }
 .cip.tamam .cip-yazi { text-decoration: line-through; color: var(--soluk); }
 .cip button { background: none; border: none; color: var(--soluk); font-size: 0.85rem; }
-.cip button:hover { color: #ff6b6b; }
+.cip button:hover { color: var(--sil); }
 .esnek-ekle { display: flex; gap: 6px; }
 .esnek-ekle input { flex: 1; }
 
@@ -620,15 +664,15 @@ header h1 span { color: var(--vurgu-metin); }
 .tehlike {
     background: none;
     border: 1px solid #a33;
-    color: #ff6b6b;
+    color: var(--sil);
     border-radius: 10px;
     padding: 8px 14px;
 }
 .tehlike:hover { background: rgba(255, 107, 107, 0.1); }
 
 /* 🎯 Odak modu */
-#seri { color: #ff9d4d; font-weight: 700; font-size: 0.88rem; }
-#seviye { color: #ffd94d; font-weight: 700; font-size: 0.88rem; }
+#seri { color: var(--seri); font-weight: 700; font-size: 0.88rem; }
+#seviye { color: var(--seviye); font-weight: 700; font-size: 0.88rem; }
 #anaSayac {
     color: var(--yazi);
     background: rgba(255, 82, 82, 0.15);
@@ -721,7 +765,7 @@ details.panel[open] summary::after { content: "▾"; }
 .deneme-satir small { color: var(--soluk); }
 .deneme-satir b { color: var(--yesil); white-space: nowrap; }
 .deneme-satir button { background: none; border: none; color: var(--soluk); }
-.deneme-satir button:hover { color: #ff6b6b; }
+.deneme-satir button:hover { color: var(--sil); }
 .deneme-form { display: flex; flex-direction: column; gap: 6px; }
 
 /* 📚 Konu takibi */
@@ -748,7 +792,7 @@ details.panel[open] summary::after { content: "▾"; }
 .konu-satir span { flex: 1; }
 .konu-durum { background: none; border: none; font-size: 0.9rem; padding: 0; }
 .konu-sil { background: none; border: none; color: var(--soluk); font-size: 0.8rem; }
-.konu-sil:hover { color: #ff6b6b; }
+.konu-sil:hover { color: var(--sil); }
 
 /* 🏆 Gelişim */
 .ist-cubuk.xp { background: #ffd94d; }
@@ -775,7 +819,7 @@ details.panel[open] summary::after { content: "▾"; }
     border-radius: 6px;
 }
 .rekor-satir.bu-hafta { background: rgba(108, 140, 255, 0.15); }
-.rekor-satir b { color: #ffd94d; }
+.rekor-satir b { color: var(--seviye); }
 
 .odak-pencere { align-items: center; text-align: center; }
 .odak-pencere.molada { border-color: var(--yesil); }
@@ -831,7 +875,7 @@ details.panel[open] summary::after { content: "▾"; }
 #karneBtn { width: 100%; }
 #aVeriSil { width: 100%; }
 
-.soru-sayi.hedef-tamam { color: #ffd94d; }
+.soru-sayi.hedef-tamam { color: var(--seviye); }
 
 /* 📖 Kaynak takibi */
 .kaynak-satir {
