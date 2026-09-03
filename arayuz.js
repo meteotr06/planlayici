@@ -211,7 +211,16 @@ document.getElementById("denemeEkleBtn").onclick = () => {
                document.getElementById("dYanlis").value, document.getElementById("dBos").value);
     if (denemeSonuc && denemeSonuc.hata) { alert(denemeSonuc.hata); return; }
     for (const id of ["dAd", "dDogru", "dYanlis", "dBos"]) document.getElementById(id).value = "";
-    bildirimGoster("✔ Deneme kaydedildi, net hesaplandı.");
+    /* Uyari KAYDI ENGELLEMEZ, yalnizca soyler -- ogrenci tam sinav
+       cozmemis olabilir (brans/mini deneme). Gerekce cekirdek.js'te
+       `SINAV_SORU_SAYISI` acikamasinda. `alert` secildi cunku
+       `bildirimGoster` seridi birkac saniyede kayboluyor; bu uyarinin
+       gorulmesi gerekiyor, kaciran ogrenci yanlis neti deftere yazar. */
+    if (denemeSonuc && denemeSonuc.uyari) {
+        alert(denemeSonuc.uyari);
+    } else {
+        bildirimGoster("✔ Deneme kaydedildi, net hesaplandı.");
+    }
     ciz();
 };
 

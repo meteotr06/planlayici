@@ -161,6 +161,43 @@ window.addEventListener("load", function () {
   ol("özet alanları hep sonlu sayı",
      [b.toplam, b.biten, b.dakikaToplam].every(Number.isFinite));
 
+  /* ── Deneme, sınavın soru sayısını aşıyorsa SÖYLENİR ────────────
+     Ölçüldü (03.09.2026, uygulama kullanılarak): TYT seçiliyken
+     100/50/30 girildi — toplam 180, TYT 120 sorudur. Kabul edildi,
+     net 87,5 yazıldı, uyarı çıkmadı, gelişim grafiğine işlendi.
+     10 yerine 100 yazmak tek tuş hatası; sonuç çökme değil, MAKUL
+     GÖRÜNEN yanlış bir net.
+     Engellemiyor, söylüyor: öğrenci branş/mini deneme de çözer;
+     sert sınır meşru kullanımı keserdi. */
+  {
+    /* KENDI FIXTURE'INI KURAR. Bu sayfadaki `bosla()` yalnizca
+       {tekrarlayan, haftalar, gunlukIz, surum} kuruyor -- `denemeler`
+       ALANI YOK. Ilk yazdigimda `veri.denemeler.length` cagirdim ve
+       sayfa TypeError ile durdu; ozet "yukleniyor..." kaldi.
+       Tehlikeli olan sey: disaridan bakinca `window.__sinama.sonuclar`
+       bostu ve "kalan yok" gibi okunuyordu -- yani KIRIK bir sinama
+       GECMIS gibi gorunuyordu. Uzun+sessiz+OLUMLU tuzagi tam bu.
+       Ozeti okumadan "gecti" demeyecegim.
+       Ayrica sunu da gosterdi: `denemeEkle` bu takimda hic kapsanmiyordu. */
+    bosla();
+    veri.denemeler = [];
+    const say = () => veri.denemeler.length;
+    const n0 = say();
+    const asan = denemeEkle("A", "2026-09-01", "TYT", "100", "50", "30");
+    ol("sınavı aşan deneme UYARI döndürüyor",
+       !!(asan && asan.uyari), asan && asan.uyari ? "uyarı var" : "uyari YOK");
+    ol("uyarı verse de KAYDEDİYOR (engellemez)", say() === n0 + 1);
+
+    const tam = denemeEkle("B", "2026-09-01", "TYT", "80", "30", "10");
+    ol("tam 120 soruluk TYT uyarmıyor", !!(tam && tam.tamam && !tam.uyari));
+
+    const yarim = denemeEkle("C", "2026-09-01", "TYT", "40", "8", "12");
+    ol("yarım deneme (60 soru) uyarmıyor", !!(yarim && !yarim.uyari));
+
+    const lgs = denemeEkle("D", "2026-09-01", "LGS", "60", "30", "10");
+    ol("LGS 100 soru uyarıyor (LGS 90'dır)", !!(lgs && lgs.uyari));
+  }
+
   // ── Sonuç ───────────────────────────────────────────────────────────
   sinamaTemizle();
   if (!sinamaIzinli) {

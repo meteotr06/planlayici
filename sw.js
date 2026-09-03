@@ -2,7 +2,16 @@
 // Uygulamayı çevrimdışı da çalıştırır: dosyaları önbelleğe alır.
 // Yeni sürüm çıkarınca SURUM'u artır ki herkese taze dosyalar gitsin.
 
-const SURUM = "planlayici-v23";
+const SURUM = "planlayici-v24";
+
+/* DAMGA SURUM'DEN TURETILIYOR, ELLE YAZILMIYOR (03.09.2026).
+   Asagidaki liste "?v=23" degerlerini ELLE tasiyordu ve SURUM ayri bir
+   yerde duruyordu. Bu tam olarak alttaki uyarinin anlattigi kusurun
+   kaynagi: iki yer, tek elle guncelleme, kacinilmaz ayrisma. Kardes
+   uygulamada (09 Hesap Araclari) bu zaten turetilmise cevrilmisti;
+   buraya tasinmamisti -- K-69.
+   Artik ikisi ayri yazilamaz: damga tek kaynaktan gelir. */
+const DAMGA = "v=" + SURUM.replace(/^\D*v/, "");
 const DOSYALAR = [
     // ⚠️ BU LİSTE index.html'İ BİREBİR YANSITMALI.
     // Ölçüldü (27.08.2026, CANLIDA): index.html "cekirdek.js?v=19" istiyordu,
@@ -10,13 +19,27 @@ const DOSYALAR = [
     // hiçbir şey bozulmaz; internet kesikken uygulama YARIM açılır — yani
     // çevrimdışı katmanı tam da iş görmesi gereken anda boş döner.
     // Sürüm artırırken index.html ile birlikte BURAYI da güncelle.
-    // `yayin_denetle.py` bunu artık denetliyor.
+    // NOT (03.09.2026): burada eskiden "`yayin_denetle.py` bunu artik
+    // denetliyor" yaziyordu. BU PROJEDE OYLE BIR BETIK YOK (klasorde hic
+    // .py dosyasi yok) -- okuyan kisiye var olmayan bir nobetciye guven
+    // veriyordu. Susan nobetciden kotusu, VAR SANILAN nobetcidir.
+    // Yerine yapisal cozum: damga artik SURUM'den turetiliyor, yani iki
+    // yerin ayrismasi ARTIK MUMKUN DEGIL.
     "./",
     "./index.html",
-    "./kurulum.js",
-    "./stil.css?v=23",
-    "./cekirdek.js?v=23",
-    "./arayuz.js?v=23",
+    /* DAMGALI (03.09.2026). Burada damgasiz "./kurulum.js" yaziyordu ama
+       index.html "kurulum.js?v=NN" istiyor -- FARKLI ANAHTAR, cevrimdisi
+       hic eslesmiyordu. Listenin hemen ustundeki "BU LISTE index.html'I
+       BIREBIR YANSITMALI" uyarisinin ta kendisi; uc dosyada uyuluyor,
+       dorduncusunde uyulmamis. Damga turetilince otekiler kendiliginden
+       duzeldi, bu satir damgasiz oldugu icin geride kaldi ve ancak
+       "index.html ne istiyor / onbellekte ne var" diye KARSILASTIRINCA
+       gorundu. Listeye bakmak yetmiyor, iki tarafi esletmek gerekiyor. */
+    "./kurulum.js?" + DAMGA,
+    "./guncelle.js?" + DAMGA,
+    "./stil.css?" + DAMGA,
+    "./cekirdek.js?" + DAMGA,
+    "./arayuz.js?" + DAMGA,
     "./manifest.json",
     "./ikon-192.png",
     "./ikon-512.png",
@@ -25,7 +48,13 @@ const DOSYALAR = [
 
 self.addEventListener("install", (olay) => {
     olay.waitUntil(
-        caches.open(SURUM).then((onbellek) => onbellek.addAll(DOSYALAR))
+        /* TEK TEK EKLENIR, `addAll` DEGIL. `addAll` hep-ya-hictir:
+           listedeki tek bir dosya inmezse HICBIRI onbellege girmez ve
+           cevrimdisi katman komple duser -- ustelik cevrimiciyken
+           hicbir belirti vermez. Kardes uygulamada olculup duzeltilmis,
+           buraya tasinmamisti (K-69). */
+        caches.open(SURUM).then((onbellek) =>
+            Promise.all(DOSYALAR.map((u) => onbellek.add(u).catch(() => null))))
     );
     self.skipWaiting();
 });

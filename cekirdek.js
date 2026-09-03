@@ -431,6 +431,36 @@ function sayiOku(girdi, tur) {
     return isFinite(d) ? d : null;
 }
 
+/* SINAVLARIN SORU SAYISI -- girilen deneme mumkun mu?
+
+   OLCULDU (03.09.2026, uygulama kullanilarak): TYT secili iken
+   100 dogru / 50 yanlis / 30 bos girildi. TOPLAM 180. TYT 120
+   sorudur; boyle bir deneme yoktur. Uygulama kabul etti, net 87,5
+   yazdi, uyari vermedi ve gelisim grafigine o noktayi koydu.
+   Ayrica "9999 dogru" da kabul edildi.
+
+   Neden onemli: 10 yerine 100 yazmak tek tus hatasi. Sonuc cokme
+   degil, MAKUL GORUNEN yanlis bir net ve bozulmus bir ilerleme
+   egrisi -- ogrenci kendini oldugundan iyi/kotu sanir.
+
+   NEDEN ENGELLEMIYOR, SOYLUYOR: ogrenci her zaman tam sinav
+   cozmez; brans denemesi, mini deneme, yarim deneme yaygin. Sert
+   sinir mesru kullanimi keserdi. Kur Pusulasi'ndaki stopaj
+   uyarisiyla ayni ilke: hesap KULLANICININ girdisiyle yapilir,
+   fark SOYLENIR. Sessizce ezmek de sessizce yanlis hesaplamak da
+   dogru degil.
+
+   SAYILAR DOGRULANDI (03.09.2026):
+     TYT 120  (40 Turkce + 40 Matematik + 20 Sosyal + 20 Fen)
+     AYT 160  (40 Edebiyat-Sosyal1 + 40 Sosyal2 + 40 Mat + 40 Fen)
+              -- ogrenci alanina gore ALT KUMESINI cozer, o yuzden
+              bu bir UST SINIR; 160'in altini uyarmiyoruz.
+     LGS  90  (50 sozel + 40 sayisal)
+   Kaynak ozetleri dokumuyle birlikte veriyor; toplam ile parca
+   toplami tutuyor -- sayiyi tek basina degil, bilesenleriyle
+   dogruladim. */
+const SINAV_SORU_SAYISI = { TYT: 120, AYT: 160, LGS: 90 };
+
 function denemeEkle(ad, tarih, tur, dogru, yanlis, bos) {
     /* OKUNAMAYAN GIRDI SIFIR DEGILDIR.
        Onceki hali: `sayiOku(dogru) || 0`. Cozumleyici bozuk girdide
@@ -461,13 +491,23 @@ function denemeEkle(ad, tarih, tur, dogru, yanlis, bos) {
         return { hata: 'Soru sayısı eksi olamaz.' };
     }
     const net = tur === "LGS" ? dogru - yanlis / 3 : dogru - yanlis / 4;
+
+    /* Kayit YAPILIR, uyari donerse arayuz gosterir (yukaridaki gerekce). */
+    const enCok = SINAV_SORU_SAYISI[tur];
+    const toplamSoru = dogru + yanlis + bos;
+    const uyari = (enCok && toplamSoru > enCok)
+        ? tur + " " + enCok + " sorudur; sen toplam " + toplamSoru +
+          " soru girdin. Net yine de senin girdiginle hesaplandi — " +
+          "yanlis yazdiysan denemeyi silip yeniden ekle."
+        : null;
+
     veri.denemeler.push({
         id: benzersizId(), ad: (ad || "Deneme").trim(), tarih, tur,
         dogru, yanlis, bos, net: Math.round(net * 100) / 100
     });
     veri.denemeler.sort((a, b) => a.tarih.localeCompare(b.tarih));
     kaydet();
-    return { tamam: true };
+    return { tamam: true, uyari: uyari };
 }
 
 function denemeSil(id) {
