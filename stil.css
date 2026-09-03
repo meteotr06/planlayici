@@ -982,6 +982,23 @@ html[data-renk="gri"] body.acik       { --vurgu: #475569; --vurgu-yazi: #ffffff;
 
    4. Hareket RENK ya da ANLAM tasimaz. Animasyonu gormeyen kullanici
       hicbir bilgi kacirmaz.
+
+   5. EKRANDAKI BIR SAYIYI ANIMASYONLA URETME. "Sayarak yazan" sayac
+      gibi bir sey eklenecekse son deger animasyondan BAGIMSIZ
+      yazilmali; animasyon yalnizca aradaki yolu susler, VARIS NOKTASI
+      ONA EMANET EDILMEZ.
+      Sebebi olculdu (12 Kahve Kavurma, 03.09.2026): tarayici GORUNMEYEN
+      sekmede `requestAnimationFrame`i HIC calistirmaz. Sayac son
+      degerine varamadan donuyor ve ekranda MAKUL AMA YANLIS bir sayi
+      kaliyor -- motor 25.350 derken ekran 15.150 gosteriyordu.
+      Uygulama calisir, sayi yanlistir, kullanici emindir; ustelik
+      yanlisi ANIMASYONUN KENDISI uretmistir.
+      `requestAnimationFrame` bir garanti degil NEZAKETTIR;
+      `transitionend`, `animationend`, `visibilitychange` de oyle --
+      hicbiri calisacagini vaat etmez.
+      BU DOSYADA BOYLE BIR SEY YOK (olculdu: `requestAnimationFrame`
+      hic gecmiyor, sayilar dogrudan yaziliyor). Kural ileride biri
+      eklemeye kalkarsa diye burada duruyor.
    ==================================================================== */
 @media (prefers-reduced-motion: no-preference) {
 

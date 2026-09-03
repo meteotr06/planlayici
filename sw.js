@@ -2,7 +2,7 @@
 // Uygulamayı çevrimdışı da çalıştırır: dosyaları önbelleğe alır.
 // Yeni sürüm çıkarınca SURUM'u artır ki herkese taze dosyalar gitsin.
 
-const SURUM = "planlayici-v25";
+const SURUM = "planlayici-v26";
 
 /* DAMGA SURUM'DEN TURETILIYOR, ELLE YAZILMIYOR (03.09.2026).
    Asagidaki liste "?v=23" degerlerini ELLE tasiyordu ve SURUM ayri bir
