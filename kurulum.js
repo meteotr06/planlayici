@@ -35,6 +35,7 @@
 
     var VARSAYILAN = {
         anahtar: 'kurulum-ertelendi',   /* uygulama başına ayrı verilmeli */
+        kapiMetni: '📲 Uygulama olarak kur',
         gun: 7,                          /* "şimdi değil" kaç gün sussun */
         baslik: 'Uygulama olarak kur',
         metin: 'Ana ekranına ekle, internetsiz de çalışsın',
@@ -251,6 +252,60 @@
             })();
         }
 
+        /* ---- KALICI KAPI ------------------------------------------
+           Kullanicinin bildirdigi kusur (03.09.2026):
+               "uygulamayi siliyorum, geri yuklemek icin secenek cikmiyor"
+
+           Sebep: davet SERIDI tek kapiydi. Serit su durumlarda hic
+           cikmaz --
+             - kullanici daha once "Simdi degil" demistir (7 gun susar),
+             - tarayici `beforeinstallprompt` gondermez (Chrome yakin
+               zamanda SILINMIS bir uygulama icin bir sure bastirir;
+               Firefox ve uygulama ici tarayicilar hic gondermez),
+             - kullanici seridi kapatmistir.
+           Bu durumlarda kullanicinin HICBIR yolu kalmiyordu.
+
+           Olculdu: dokuz uygulamanin SEKIZINDE gorunur kurulum yolu
+           yoktu; yalnizca portalda vardi.
+
+           Cozum: serit gecici, KAPI kalicidir. Kurulu uygulamada HIC
+           eklenmez -- kurana ise yaramaz. Erteleme kaydina BAKMAZ:
+           "simdi degil" demek "bir daha kuramayayim" demek degildir.
+
+           SABIT KONUMDA DEGIL, NORMAL AKISTA. Bu ailede sabit konumlu
+           serit ayni gun IKI kez icerigi ortup zarar verdi: Hava'da
+           gizlilik baglantisini tiklanamaz yapti, Muhasebe'de "Kaydet"
+           dugmesinin ustune bindi -- kullanici tutari yazip basiyor,
+           tiklama seride gidiyor ve SAYI KAYBOLUYORDU. Kalici kapi o
+           hatayi tekrarlamaz: sayfanin akisinda, en altta durur. */
+        function kaliciKapi() {
+            if (uygulamaKipi) return;
+            if (document.querySelector('.kurulum-kapi')) return;
+            var yer = document.querySelector('[data-kurulum-yeri]') ||
+                      document.querySelector('footer') ||
+                      document.body;
+            var c = renkCifti();
+            var d = document.createElement('button');
+            d.type = 'button';
+            d.className = 'kurulum-kapi';
+            d.textContent = A.kapiMetni;
+            /* Dokunma hedefi iki boyutta da 44px -- ekran nobetcisinin
+               olctugu kural; yalniz yukseklik yetmiyor. */
+            d.style.cssText =
+                'display:block;margin:18px auto;padding:0 16px;' +
+                'min-height:44px;min-width:44px;border-radius:10px;' +
+                'font:inherit;font-size:.9em;cursor:pointer;' +
+                'background:transparent;color:' + c.yazi + ';' +
+                'border:1px solid var(--cizgi,rgba(128,128,128,.45));' +
+                'opacity:.85;';
+            d.addEventListener('click', function () {
+                /* `ac()` erteleme kaydini temizler ve seridi acar; bip
+                   yoksa talimat gosterir. Tek dogru yol odur. */
+                if (A.ac) A.ac();
+            });
+            yer.appendChild(d);
+        }
+
         function baslat() {
             if (uygulamaKipi) {
                 /* KURAN BIRI, DAVETI REDDETMIS SAYILAMAZ -- 05 buldu.
@@ -261,6 +316,10 @@
                 try { localStorage.removeItem(A.anahtar); } catch (e) {}
                 return;
             }
+            /* KAPI, ERTELEME DENETIMINDEN ONCE kurulur:
+               serit susabilir, kapi susmaz. */
+            kuruluMu().then(function (k) { if (!k) kaliciKapi(); });
+
             if (ertelendiMi()) return;
 
             window.addEventListener('beforeinstallprompt', function (e) {
