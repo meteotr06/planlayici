@@ -84,6 +84,49 @@
         var tazelendi = false;
         var serit = null;
 
+        /* -----------------------------------------------------------
+           TURETILMIS RENK, KAYNAGI DEGISINCE YENIDEN TURETILIR (K-87).
+
+           `renkCifti()` seridi kurarken BIR KEZ cagriliyor ve sonuc
+           satir ici usluba donduruluyordu. Kullanici temayi
+           degistirirse serit eski renginde kalir -- koyu sayfada
+           bembeyaz bir serit, ya da tersi.
+
+           Bir kez hesaplanan turetilmis deger, turetilmis degil
+           KOPYALANMIS olur. Kardes dosya kurulum.js'te bugun
+           kapatildi; burada acikti (K-69).
+
+           BU BLOK NEDEN TAM BURADA: `serit` yukaridaki satirda, yani
+           `Guncelle()` govdesinde tanimli. Ilk yazisimda bu iki islevi
+           MODUL duzeyine koymustum -- `serit` kapsam disi kalir ve
+           tema degisince ReferenceError firlardi. Bugun kurulum.js'te
+           tam bu hatayi yapip bir dugmeyi kaybettim (K-88).
+           ----------------------------------------------------------- */
+        var _izlemeKurulu = false;
+        function renkleriTazele() {
+            if (!serit || !serit.isConnected) return;
+            var c = renkCifti();
+            serit.style.background = c.zemin;
+            serit.style.color = c.yazi;
+            var ik = serit.querySelector('[data-ikincil]');
+            if (ik) ik.style.color = c.yazi;
+        }
+        function temayiIzle() {
+            if (_izlemeKurulu) return;
+            _izlemeKurulu = true;
+            try {
+                new MutationObserver(renkleriTazele).observe(
+                    document.documentElement,
+                    { attributes: true,
+                      attributeFilter: ['data-tema', 'data-renk', 'class'] });
+            } catch (e) {}
+            try {
+                var mq = window.matchMedia('(prefers-color-scheme: dark)');
+                if (mq.addEventListener) mq.addEventListener('change', renkleriTazele);
+                else if (mq.addListener) mq.addListener(renkleriTazele);
+            } catch (e) {}
+        }
+
         navigator.serviceWorker.addEventListener('controllerchange', function () {
             var yeniBetik = navigator.serviceWorker.controller
                           ? navigator.serviceWorker.controller.scriptURL
@@ -228,16 +271,27 @@
             var sonra = document.createElement('button');
             sonra.type = 'button';
             sonra.textContent = A.sonraDugme;
+            /* Tazeleme bu dugmeyi bu isaretle bulur; sinif adiyla
+               arasaydik, seridi kullanan bir uygulama sinifi
+               degistirdiginde sessizce bulunamaz olurdu. */
+            sonra.setAttribute('data-ikincil', '1');
             sonra.style.cssText =
                 'min-height:44px;min-width:44px;padding:0 12px;' +
                 'border-radius:10px;font:inherit;cursor:pointer;' +
-                'background:transparent;color:var(--yazi2,#666);' +
+                /* SERIDIN KENDI CIFTINDEN (K-81). Eskiden
+                   `var(--yazi2)` idi: seridin zeminine degil SAYFANIN
+                   soluk rengine bakiyordu. Serit kendi zeminini
+                   hesapliyorsa yazisini da ayni hesaptan almali; iki
+                   ayri kaynak es tutmaz. Olculmustu (hava koyu tema,
+                   kardes dosyada): karsitlik 2,22. */
+                'background:transparent;color:' + _c.yazi + ';opacity:.85;' +
                 'border:1px solid var(--cizgi,#ddd);';
             sonra.addEventListener('click', function () {
                 serit.remove();
                 serit = null;
             });
             serit.appendChild(sonra);
+            temayiIzle();
 
             document.body.appendChild(serit);
         }
