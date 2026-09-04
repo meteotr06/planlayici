@@ -537,7 +537,13 @@ body.acik .panel.asistan { border-color: #c3ccea; background: linear-gradient(16
 
 .tamamlanma { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
 .tamamlanma-ust { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--soluk); }
-.tamamlanma-ust b { color: var(--yesil); }
+/* KACIRDIGIM YER (03.09.2026 gecesi duzeltmesinin eksigi).
+   `--yesil`i yazi rolunde kullanan yerleri `--yesil-metin`e cevirmistim
+   ama BURAYI atlamistim. Olculdu, acik tema: XP gostergesi ("0 / 100 XP")
+   #3ddc84 / #eef1f8 = 1,78. Esik 4,5.
+   Ayni sinifin ayni dosyadaki bir ornegini kacirmak, sinifi kapatmadigimi
+   gosteriyor -- K-28'in kucuk hali. */
+.tamamlanma-ust b { color: var(--yesil-metin); }
 
 /* Hedefler */
 .hedef {
@@ -734,7 +740,7 @@ details.panel[open] summary::after { content: "▾"; }
     padding: 6px 8px;
 }
 .soru-ad { flex: 1; font-size: 0.82rem; text-transform: capitalize; }
-.soru-sayi { color: var(--yesil); font-size: 0.95rem; min-width: 28px; text-align: right; }
+.soru-sayi { color: var(--yesil-metin); font-size: 0.95rem; min-width: 28px; text-align: right; }
 .soru-dugmeler { display: flex; gap: 3px; }
 .soru-dugmeler button {
     background: var(--arka);
@@ -763,7 +769,7 @@ details.panel[open] summary::after { content: "▾"; }
     font-size: 0.78rem;
 }
 .deneme-satir small { color: var(--soluk); }
-.deneme-satir b { color: var(--yesil); white-space: nowrap; }
+.deneme-satir b { color: var(--yesil-metin); white-space: nowrap; }
 .deneme-satir button { background: none; border: none; color: var(--soluk); }
 .deneme-satir button:hover { color: var(--sil); }
 .deneme-form { display: flex; flex-direction: column; gap: 6px; }
@@ -778,7 +784,7 @@ details.panel[open] summary::after { content: "▾"; }
     margin-top: 4px;
     text-transform: capitalize;
 }
-.konu-ders small { color: var(--yesil); }
+.konu-ders small { color: var(--yesil-metin); }
 .konu-satir {
     display: flex;
     align-items: center;
@@ -825,7 +831,7 @@ details.panel[open] summary::after { content: "▾"; }
 .odak-pencere.molada { border-color: var(--yesil); }
 
 .odak-faz { color: var(--soluk); font-size: 0.9rem; }
-.odak-pencere.molada .odak-faz { color: var(--yesil); }
+.odak-pencere.molada .odak-faz { color: var(--yesil-metin); }
 
 .odak-sayac {
     font-size: 4.2rem;
@@ -834,7 +840,7 @@ details.panel[open] summary::after { content: "▾"; }
     letter-spacing: 2px;
     color: var(--vurgu-metin);
 }
-.odak-pencere.molada .odak-sayac { color: var(--yesil); }
+.odak-pencere.molada .odak-sayac { color: var(--yesil-metin); }
 
 .odak-tur { color: var(--soluk); font-size: 0.8rem; }
 .odak-pencere .dugmeler { width: 100%; }
