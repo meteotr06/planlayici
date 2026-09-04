@@ -173,6 +173,59 @@
         return { zemin: zemin, yazi: (p === null || p > 0.179) ? '#111111' : '#f5f5f5' };
     }
 
+    /* ---------------------------------------------------------------
+       TURETILMIS RENK, KAYNAGI DEGISINCE YENIDEN TURETILIR.
+
+       Olculdu (04.09.2026, acik temada): `.kurulum-kapi` karsitligi
+       1,01 -- beyaz uzerine beyaz, yani GORUNMEZ. Sebep: renk cifti
+       oge yaratilirken BIR KEZ hesaplanip satir ici usluba
+       donduruluyordu. Sayfa koyu acilip kullanici acik temaya
+       gecince yazi `#f5f5f5` olarak kaliyordu.
+
+       Bir kez hesaplanan turetilmis deger, turetilmis degil
+       KOPYALANMIS olur. Kaynak degisince kopya bayatlar ve --
+       burada oldugu gibi -- sessizce kaybolur.
+       --------------------------------------------------------------- */
+    var _izlenen = [];
+    function _izle(oge, tur) { _izlenen.push({ oge: oge, tur: tur }); }
+
+    function renkleriTazele() {
+        var c = renkCifti();
+        for (var i = _izlenen.length - 1; i >= 0; i--) {
+            var x = _izlenen[i];
+            if (!x.oge || !x.oge.parentNode) { _izlenen.splice(i, 1); continue; }
+            x.oge.style.color = c.yazi;
+            if (x.tur === 'serit') {
+                x.oge.style.background = c.zemin;
+                /* Ikincil dugme seridin KENDI ciftinden beslenir (K-81);
+                   tazelemede de ayni kaynaktan gelmeli, yoksa cift
+                   ayrisir ve yine karsitlik duser. */
+                var ik = x.oge.querySelector('[data-ikincil]');
+                if (ik) ik.style.color = c.yazi;
+            }
+        }
+    }
+
+    /* Iki kaynak da izlenir:
+         1. `data-tema` -- kullanicinin kendi secimi,
+         2. `prefers-color-scheme` -- secim yoksa cihazin kipi.
+       Birini atlarsak o yoldan gelen degisiklikte kusur geri gelir. */
+    var _izlemeKurulu = false;
+    function temayiIzle() {
+        if (_izlemeKurulu) return;
+        _izlemeKurulu = true;
+        try {
+            new MutationObserver(renkleriTazele).observe(
+                document.documentElement,
+                { attributes: true, attributeFilter: ['data-tema', 'data-renk', 'class'] });
+        } catch (e) {}
+        try {
+            var m = window.matchMedia('(prefers-color-scheme: dark)');
+            if (m.addEventListener) m.addEventListener('change', renkleriTazele);
+            else if (m.addListener) m.addListener(renkleriTazele);
+        } catch (e) {}
+    }
+
     function seridiYap() {
             if (serit) return serit;
             serit = document.createElement('div');
@@ -188,11 +241,27 @@
                 'border:1px solid var(--cizgi,#ddd);' +
                 'box-shadow:0 8px 30px rgba(0,0,0,.28);max-width:640px;margin:0 auto;';
             document.body.appendChild(serit);
+            _izle(serit, 'serit');
+            temayiIzle();
             return serit;
         }
 
+        /* Seridin SON cizim durumu. Tazeleme ayni hali yeniden kurar;
+           bilmezsek "Kur" yazan dugmeyi "Nasil?" yapabiliriz ve
+           kullanicinin gordugu dugme sessizce anlam degistirir. */
+        var _sonKurulabilir = null;
+
         function goster(kurulabilir) {
+            _sonKurulabilir = kurulabilir;
             var s = seridiYap();
+            /* KENDI CIFTINI KENDI HESAPLAR.
+               Eskiden `seridiYap()` icindeki `_c`ye uzaniyordu -- baska
+               kapsam. Kati kipte ReferenceError firlatiyor ve islev
+               tam da "Simdi degil" dugmesini eklemeden once kesiliyordu:
+               serit ciziliyor ama KAPATILAMIYORDU.
+               `renkCifti()` saftir (yalniz kok CSS degiskenlerini okur),
+               bu yuzden iki cagri ayni cevabi verir. */
+            var _c = renkCifti();
             s.innerHTML = '';
             var metin = document.createElement('div');
             metin.style.cssText = 'flex:1 1 200px;min-width:0;';
@@ -223,11 +292,22 @@
 
             var sonra = document.createElement('button');
             sonra.type = 'button';
+            /* Tazeleme bu dugmeyi bu isaretle bulur. Sinif adiyla
+               arasaydik, seridi kullanan bir uygulama sinifi
+               degistirdiginde sessizce bulunamaz olurdu. */
+            sonra.setAttribute('data-ikincil', '1');
             sonra.textContent = A.sonraBtn;
             sonra.style.cssText =
                 'min-height:44px;min-width:44px;padding:0 12px;border-radius:10px;' +
                 'font:inherit;cursor:pointer;background:transparent;' +
-                'color:var(--yazi2,#666);border:1px solid var(--cizgi,#ddd);';
+                /* IKINCIL DUGME DE SERIDIN KENDI CIFTINDEN BESLENIR.
+                   Eskiden `var(--yazi2)` kullaniyordu -- yani seridin
+                   zeminine degil SAYFANIN soluk rengine bakiyordu.
+                   Olculdu (04.09.2026, hava koyu tema): karsitlik 2,22.
+                   Serit kendi zeminini hesapliyorsa yazisini da ayni
+                   hesaptan almali; iki ayri kaynak es tutmaz (K-81). */
+                'color:' + _c.yazi + ';opacity:.85;' +
+                'border:1px solid var(--cizgi,rgba(128,128,128,.45));';
             sonra.addEventListener('click', function () { kapat(true); });
             s.appendChild(sonra);
         }
@@ -304,7 +384,33 @@
                 if (A.ac) A.ac();
             });
             yer.appendChild(d);
+            _izle(d, 'kapi');
+            temayiIzle();
         }
+
+        /* METIN TAZELEME KAPISI -- yalniz cok dilli uygulamalar kullanir.
+           Sekiz tek dilli uygulama bu olayi hic gondermez; onlar icin
+           bu blok hicbir sey yapmaz.
+
+           Modul dil BILMIYOR: yalniz "sana verdigim metinler degisti,
+           yeniden ciz" diyen bir olay aliyor. Dil kavrami uygulamada
+           kaliyor -- ortak modulu dokuz uygulamanin diline ortak
+           etmek, tam da kacindigimiz sey. */
+        document.addEventListener('kurulum-metin', function (e) {
+            var yeni = (e && e.detail) || {};
+            Object.keys(yeni).forEach(function (k) {
+                if (k in A) A[k] = yeni[k];
+            });
+            var kapi = document.querySelector('.kurulum-kapi');
+            if (kapi) kapi.textContent = A.kapiMetni;
+            /* Serit EKRANDAYSA yeniden ciz -- ayni kurulabilirlik
+               haliyle. Ekranda degilse dokunma; gorunmeyen bir seridi
+               canlandirmak, kullanicinin kapattigi daveti geri
+               getirmek olurdu. */
+            if (serit && serit.parentNode && _sonKurulabilir !== null) {
+                goster(_sonKurulabilir);
+            }
+        });
 
         function baslat() {
             if (uygulamaKipi) {
