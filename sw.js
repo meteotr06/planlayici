@@ -2,7 +2,31 @@
 // Uygulamayı çevrimdışı da çalıştırır: dosyaları önbelleğe alır.
 // Yeni sürüm çıkarınca SURUM'u artır ki herkese taze dosyalar gitsin.
 
-const SURUM = "planlayici-v29";
+const SURUM = "planlayici-v29"
+/* ONBELLEK ADI ONEKI -- YALNIZ KENDI ONBELLEKLERIMIZI SILIYORUZ.
+
+   `caches` (CacheStorage) KOKEN basinadir, kapsam basina DEGIL.
+   meteotr06.github.io uzerindeki dokuz uygulama ayni onbellek
+   listesini paylasir.
+
+   Buradaki temizlik eskiden "adi SURUM olmayan her onbellegi sil"
+   diyordu -- yani BUTUN KARDES UYGULAMALARIN onbellegini siliyordu:
+   portal, Hesap Araclari, Muhasebe, Kur Pusulasi, Planlayici, Arsa,
+   RoastMate, Hava Durumu, Goz Molasi.
+
+   Kullanicinin gordugu sey: ucakta kurulu bir kardes uygulamayi
+   aciyor, BOS SAYFA geliyor. Simetrik olduğu icin ailenin cevrimdisi
+   vaadi topluca cokuyordu. Hicbir hata mesaji yok; cevrimiciyken her
+   sey kusursuz calistigi icin sebep bulunamiyor.
+
+   Sinifi 05 Goz Molasi oturumu buldu ve olctu (`hesap-v95` ile
+   `portal-v8` onbellekleri kuruldu; ONCE ikisi de siliniyordu, SONRA
+   ikisi de duruyor). Buraya tasindi (K-69).
+
+   ONEK SABITTEN TURETILIR ki ikisi ayrisamasin. Elle yazilsaydi,
+   surum adi degistiginde onek geride kalir ve temizlik SESSIZCE
+   hicbir seyi silmez olurdu -- eski onbellekler birikirdi. */
+const ONEK = SURUM.replace(/v\d+$/, '');;
 
 /* DAMGA SURUM'DEN TURETILIYOR, ELLE YAZILMIYOR (03.09.2026).
    Asagidaki liste "?v=23" degerlerini ELLE tasiyordu ve SURUM ayri bir
@@ -63,7 +87,7 @@ self.addEventListener("activate", (olay) => {
     // Eski sürümlerin önbelleklerini temizle
     olay.waitUntil(
         caches.keys().then((adlar) =>
-            Promise.all(adlar.filter(ad => ad !== SURUM).map(ad => caches.delete(ad)))
+            Promise.all(adlar.filter(ad => ad !== SURUM && ad.startsWith(ONEK)).map(ad => caches.delete(ad)))
         ).then(() => self.clients.claim())
     );
 });
