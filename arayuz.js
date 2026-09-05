@@ -1691,27 +1691,67 @@ function renkUygula() {
     if (alan) alan.value = gecerli;
 }
 
-function temaUygula() {
-    /* SECIM YOKSA CIHAZI DINLE -- varsayilan diske YAZILMAZ.
-       Onceki hali `depoOku("tema") === "acik"` idi; kayit yoksa
-       KOYU varsayiliyordu. Cihazi acik kipte olan kullanici
-       uygulamayi koyu goruyordu ve hicbir sey secmemisti.
-       Kardes uygulamada (07 Kur) olculup duzeltilmis bir ders:
-       "varsayilan, secim gibi diske yazilmamali" -- kaydin,
-       anlattigi seyden uzun yasamasi. Buraya tasinmamisti (K-69).
-       Kullanici bir kez secerse artik cihaz dinlenmez: SECIM KUTSAL. */
-    const kayit = depoOku("tema");
-    let acik;
-    if (kayit === "acik" || kayit === "koyu") {
-        acik = kayit === "acik";
-    } else {
-        acik = !!(window.matchMedia &&
-                  window.matchMedia("(prefers-color-scheme: light)").matches);
-    }
-    document.body.classList.toggle("acik", acik);
-    document.getElementById("temaBtn").textContent = acik ? "🌙" : "☀️🌙";
-    document.getElementById("temaBtn").title = acik ? "Koyu temaya geç" : "Açık temaya geç";
+const TEMA_KIPLERI = ["cihaz", "acik", "koyu"];
+
+/* CIHAZ BIR SEY SOYLEMEZSE ACIK (04.09.2026, kullanicinin istegi:
+   "arayuzde daha ACIK renkler tercih edilsin").
+   Onceki hali `prefers-color-scheme: light` sorguyordu; cihaz hicbir
+   tercih bildirmezse bu YANLIS doner ve uygulama KOYU acilirdi. Simdi
+   `dark` sorguluyor: cihaz acikca koyu diyorsa koyu, OTEKI HER DURUMDA
+   acik. Yani "tercih yok" hali artik acik tarafa dusuyor.
+
+   BUNU CEVIRMEDEN ONCE ACIK PALET OLCULDU -- merkezin Hava'da yasadigi
+   ders: varsayilani acik yapinca acik palet ILK KEZ gorunur oldu ve 81
+   metin esik altinda cikti. Burada 142 metin x 2 tema olculdu; acik
+   temada alti yesil yazi esik altindaydi, once onlar duzeltildi
+   (commit 4513c01). Sonuc: koyu 0, acik 0 (tek istisna ortak
+   `kurulum.js`, bu depoda degil). Once olc, sonra cevir. */
+function cihazKoyuMu() {
+    try { return !!(window.matchMedia &&
+                    window.matchMedia("(prefers-color-scheme: dark)").matches); }
+    catch (e) { return false; }
 }
+
+function temaKipi() {
+    const k = depoOku("tema");
+    return TEMA_KIPLERI.indexOf(k) >= 0 ? k : "cihaz";
+}
+
+function temaUygula() {
+    /* SECIM KUTSAL: kullanici acik ya da koyu sectiyse cihaz dinlenmez.
+       "cihaz" kipinde cihaz dinlenir, tercih yoksa ACIK gelir.
+       Varsayilan diske YAZILMAZ -- kayit yoksa kip "cihaz"dir; boylece
+       hicbir sey secmemis olmak, "koyu istedi" diye kaydedilmis gibi
+       davranmaz (07 Kur'dan gelen ders). */
+    const kip = temaKipi();
+    const acik = kip === "acik" ? true
+               : kip === "koyu" ? false
+               : !cihazKoyuMu();
+    document.body.classList.toggle("acik", acik);
+    const btn = document.getElementById("temaBtn");
+    if (btn) {
+        btn.textContent = acik ? "🌙" : "☀️🌙";
+        btn.title = acik ? "Koyu temaya geç" : "Açık temaya geç";
+    }
+    const sec = document.getElementById("aTemaKip");
+    if (sec) sec.value = kip;
+}
+
+/* "Cihaza uy" secildiyse ve cihazin kipi DEGISIRSE ekran da degismeli.
+   Dinlemezsek kullanici telefonunu koyuya alir, uygulama acik kalir --
+   "cihaza uy" sozunu tutmamis oluruz. */
+try {
+    const _temaSorgu = window.matchMedia("(prefers-color-scheme: dark)");
+    const _temaTepki = function () { if (temaKipi() === "cihaz") temaUygula(); };
+    if (_temaSorgu.addEventListener) _temaSorgu.addEventListener("change", _temaTepki);
+    else if (_temaSorgu.addListener) _temaSorgu.addListener(_temaTepki);
+} catch (e) { }
+
+const _temaAlan = document.getElementById("aTemaKip");
+if (_temaAlan) _temaAlan.onchange = function () {
+    depoYaz("tema", _temaAlan.value);
+    temaUygula();
+};
 
 const _renkAlan = document.getElementById("aRenk");
 if (_renkAlan) _renkAlan.onchange = () => {
